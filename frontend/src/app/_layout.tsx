@@ -94,10 +94,10 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="about"
+          name="create-recipe"
           options={{
             headerShown: true,
-            title: '关于我们',
+            title: '创建菜品',
           }}
         />
       </Stack>

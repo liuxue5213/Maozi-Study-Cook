@@ -253,9 +253,27 @@ export default function CameraScreen() {
               <Text className="text-cooking-text font-medium mb-1">
                 暂时没有找到匹配的菜谱
               </Text>
-              <Text className="text-cooking-muted text-sm text-center leading-5">
-                识别出的食材组合暂无推荐，{'\n'}可以尝试添加更多食材再试
+              <Text className="text-cooking-muted text-sm text-center leading-5 mb-4">
+                识别出的食材组合暂无推荐{'\n'}
+                你可以自己动手创建这道菜！
               </Text>
+              <TouchableOpacity
+                className="bg-cooking-main px-6 py-3 rounded-full"
+                onPress={() =>
+                  router.push({
+                    pathname: '/create-recipe',
+                    params: {
+                      ingredients: recognizedItems
+                        .map((i: any) => i.name)
+                        .join(','),
+                    },
+                  })
+                }
+              >
+                <Text className="text-white font-semibold">
+                  ✏️ 创建这道菜
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
