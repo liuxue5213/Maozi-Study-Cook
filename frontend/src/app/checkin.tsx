@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../stores/authStore';
-import { communityService } from '../../services/communityService';
+import { useAuthStore } from '../stores/authStore';
+import { communityService } from '../services/communityService';
 
 /**
  * 打卡日历页面

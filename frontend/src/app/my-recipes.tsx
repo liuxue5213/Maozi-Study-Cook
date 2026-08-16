@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../stores/authStore';
-import { recipeService } from '../../services/recipeService';
+import { useAuthStore } from '../stores/authStore';
+import { recipeService } from '../services/recipeService';
 
 /**
  * 我的菜谱页面

@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../stores/authStore';
 
 /**
  * 偏好设置页面
