@@ -17,12 +17,13 @@ import { cuisineService } from '../../services/cuisineService';
  * 首页 - 推荐内容、热门菜谱、菜系入口
  */
 export default function HomeScreen() {
-  const { user } = useAuthStore();
+  const { user, checkAuth } = useAuthStore();
   const [hotRecipes, setHotRecipes] = useState([]);
   const [cuisines, setCuisines] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    checkAuth();
     loadData();
   }, []);
 
@@ -54,9 +55,11 @@ export default function HomeScreen() {
       {/* 欢迎区域 */}
       <View className="bg-cooking-main px-5 pt-6 pb-8 rounded-b-3xl">
         <Text className="text-white text-lg">
-          {user?.nickname ? `你好，${user.nickname}` : '你好，厨友'} 👋
+          {user?.nickname ? `你好，${user.nickname} 👋` : '你好，厨友 👋'}
         </Text>
-        <Text className="text-white/80 text-sm mt-1">今天想学做什么菜？</Text>
+        <Text className="text-white/80 text-sm mt-1">
+          {user?.nickname ? `今天想学做什么菜？` : '登录开始你的烹饪之旅'}
+        </Text>
 
         {/* 快捷入口 */}
         <View className="flex-row mt-5 space-x-4">
