@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,11 +16,13 @@ export default function LoginScreen() {
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const { login } = useAuthStore();
 
   const handleLogin = async () => {
+    setErrorMsg('');
     if (!account || !password) {
-      Alert.alert('提示', '请输入账号和密码');
+      setErrorMsg('请输入账号和密码');
       return;
     }
 
@@ -30,7 +31,7 @@ export default function LoginScreen() {
       await login(account, password);
       router.replace('/(tabs)/home');
     } catch (error: any) {
-      Alert.alert('登录失败', error.message || '请检查账号密码');
+      setErrorMsg(error.message || '登录失败，请检查账号密码');
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +96,13 @@ export default function LoginScreen() {
             <Text className="text-white text-lg font-semibold">登录</Text>
           )}
         </TouchableOpacity>
+
+        {/* 错误提示 */}
+        {errorMsg ? (
+          <View className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-4">
+            <Text className="text-red-500 text-sm">{errorMsg}</Text>
+          </View>
+        ) : null}
 
         {/* 注册入口 */}
         <View className="flex-row items-center justify-center mt-6">

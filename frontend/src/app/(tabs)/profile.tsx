@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,19 +14,19 @@ import { useAuthStore } from '../../stores/authStore';
  */
 export default function ProfileScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
+  // 两次点击确认退出（不依赖系统弹窗，Web/内嵌浏览器中 Alert 回调不可用）
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert('确认退出', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '确定',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    if (!confirmingLogout) {
+      // 第一次点击：进入确认状态，3 秒后自动恢复
+      setConfirmingLogout(true);
+      setTimeout(() => setConfirmingLogout(false), 3000);
+      return;
+    }
+    setConfirmingLogout(false);
+    await logout();
+    router.replace('/(auth)/login');
   };
 
   if (!isAuthenticated) {
@@ -121,10 +120,18 @@ export default function ProfileScreen() {
 
       {/* 退出登录 */}
       <TouchableOpacity
-        className="bg-white mt-2 mb-8 px-4 py-4 items-center"
+        className={`mt-2 mb-8 px-4 py-4 items-center ${
+          confirmingLogout ? 'bg-red-500' : 'bg-white'
+        }`}
         onPress={handleLogout}
       >
-        <Text className="text-red-500 font-medium">退出登录</Text>
+        <Text
+          className={`font-medium ${
+            confirmingLogout ? 'text-white' : 'text-red-500'
+          }`}
+        >
+          {confirmingLogout ? '再点一次确认退出' : '退出登录'}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );

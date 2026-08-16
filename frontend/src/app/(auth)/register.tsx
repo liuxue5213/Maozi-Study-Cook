@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,23 +22,26 @@ export default function RegisterScreen() {
     nickname: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  // 页内错误提示（不用 Alert：Web/内嵌浏览器中 window.alert 常被拦截）
+  const [errorMsg, setErrorMsg] = useState('');
   const { register } = useAuthStore();
 
   const handleRegister = async () => {
+    setErrorMsg('');
     if (!form.username || !form.password) {
-      Alert.alert('提示', '请填写必填项');
+      setErrorMsg('请填写用户名和密码');
       return;
     }
     if (!form.email && !form.phone) {
-      Alert.alert('提示', '邮箱或手机号至少填写一个');
+      setErrorMsg('邮箱或手机号至少填写一个');
       return;
     }
     if (form.password !== form.confirmPassword) {
-      Alert.alert('提示', '两次密码不一致');
+      setErrorMsg('两次输入的密码不一致');
       return;
     }
     if (form.password.length < 6) {
-      Alert.alert('提示', '密码长度不能少于6位');
+      setErrorMsg('密码长度不能少于6位');
       return;
     }
 
@@ -52,11 +54,10 @@ export default function RegisterScreen() {
         password: form.password,
         nickname: form.nickname || form.username,
       });
-      Alert.alert('成功', '注册成功', [
-        { text: '确定', onPress: () => router.replace('/(tabs)/home') },
-      ]);
+      // 注册成功直接进入首页
+      router.replace('/(tabs)/home');
     } catch (error: any) {
-      Alert.alert('注册失败', error.message || '请稍后重试');
+      setErrorMsg(error.message || '注册失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +129,13 @@ export default function RegisterScreen() {
             <Text className="text-white text-lg font-semibold">注册</Text>
           )}
         </TouchableOpacity>
+
+        {/* 错误提示 */}
+        {errorMsg ? (
+          <View className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-4">
+            <Text className="text-red-500 text-sm">{errorMsg}</Text>
+          </View>
+        ) : null}
 
         <View className="flex-row items-center justify-center mt-6 mb-8">
           <Text className="text-cooking-muted">已有账号？</Text>
