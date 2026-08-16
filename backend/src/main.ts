@@ -10,8 +10,20 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 安全中间件
-  app.use(helmet());
+  // 安全中间件（配置 CSP 允许跨域图片加载）
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'http://localhost:*', 'http://120.48.13.152:*', 'https:'],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+        },
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   // 静态文件服务：/uploads/ 目录下的文件可通过 HTTP 直接访问
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
