@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============ 桌面端 / 大屏适配 ============ */
+/* 768px 以上：应用以手机宽度居中展示，避免移动端 UI 被拉伸铺满宽屏 */
+@media (min-width: 768px) {
+  html,
+  body {
+    background-color: #f0eeeb;
+  }
+
+  #root {
+    max-width: 480px;
+    margin: 0 auto;
+    height: 100vh;
+    background-color: #fafafa;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.05),
+      0 12px 48px rgba(0, 0, 0, 0.15);
+  }
+}
