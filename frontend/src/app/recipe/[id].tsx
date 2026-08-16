@@ -269,10 +269,26 @@ export default function RecipeDetailScreen() {
           </View>
 
           {/* 统计 */}
-          <View className="flex-row mt-3">
-            <Text className="text-cooking-muted text-xs">👁 {recipe.viewCount || 0}浏览</Text>
-            <Text className="text-cooking-muted text-xs ml-3">🍳 {recipe.cookCount || 0}人做过</Text>
-            <Text className="text-cooking-muted text-xs ml-3">❤️ {recipe.likeCount || 0}赞</Text>
+          <View className="flex-row mt-4 bg-gray-50 rounded-xl py-3 px-2">
+            <View className="flex-1 items-center">
+              <Text className="text-cooking-text font-bold text-base">{recipe.viewCount || 0}</Text>
+              <Text className="text-cooking-muted text-xs mt-0.5">浏览</Text>
+            </View>
+            <View className="w-px bg-gray-200" />
+            <View className="flex-1 items-center">
+              <Text className="text-cooking-text font-bold text-base">{recipe.cookCount || 0}</Text>
+              <Text className="text-cooking-muted text-xs mt-0.5">人做过</Text>
+            </View>
+            <View className="w-px bg-gray-200" />
+            <View className="flex-1 items-center">
+              <Text className="text-cooking-text font-bold text-base">{recipe.likeCount || 0}</Text>
+              <Text className="text-cooking-muted text-xs mt-0.5">点赞</Text>
+            </View>
+            <View className="w-px bg-gray-200" />
+            <View className="flex-1 items-center">
+              <Text className="text-cooking-text font-bold text-base">{recipe.favoriteCount || 0}</Text>
+              <Text className="text-cooking-muted text-xs mt-0.5">收藏</Text>
+            </View>
           </View>
         </View>
 
