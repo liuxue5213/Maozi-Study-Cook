@@ -230,14 +230,27 @@ function PostCard({ post }: { post: any }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity className="flex-row items-center">
+        <TouchableOpacity
+          className="flex-row items-center"
+          onPress={() => router.push(`/post/${post.id}`)}
+        >
           <Ionicons name="chatbubble-outline" size={18} color="#9ca3af" />
           <Text className="text-cooking-muted text-xs ml-1">
             {post.commentCount || 0}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity className="flex-row items-center">
+        <TouchableOpacity
+          className="flex-row items-center"
+          onPress={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: `帽子学做饭 - ${post.content?.slice(0, 20)}`,
+                url: window.location.origin,
+              });
+            }
+          }}
+        >
           <Ionicons name="share-outline" size={18} color="#9ca3af" />
           <Text className="text-cooking-muted text-xs ml-1">分享</Text>
         </TouchableOpacity>

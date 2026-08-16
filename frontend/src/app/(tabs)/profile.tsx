@@ -81,17 +81,17 @@ export default function ProfileScreen() {
         <MenuItem
           icon="restaurant-outline"
           label="我的菜谱"
-          onPress={() => {}}
+          onPress={() => router.push('/my-recipes')}
         />
         <MenuItem
           icon="heart-outline"
           label="我的收藏"
-          onPress={() => {}}
+          onPress={() => router.push('/favorites')}
         />
         <MenuItem
           icon="calendar-outline"
           label="打卡日历"
-          onPress={() => {}}
+          onPress={() => router.push('/checkin')}
         />
         <MenuItem
           icon="people-outline"
@@ -104,17 +104,17 @@ export default function ProfileScreen() {
         <MenuItem
           icon="settings-outline"
           label="偏好设置"
-          onPress={() => {}}
+          onPress={() => router.push('/settings')}
         />
         <MenuItem
           icon="help-circle-outline"
           label="帮助与反馈"
-          onPress={() => {}}
+          onPress={() => router.push('/help')}
         />
         <MenuItem
           icon="information-circle-outline"
           label="关于我们"
-          onPress={() => {}}
+          onPress={() => router.push('/about')}
         />
       </View>
 

@@ -6,6 +6,37 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   /**
+   * 获取用户收藏的菜谱
+   */
+  async getFavorites(userId: number) {
+    const favorites = await this.prisma.favorite.findMany({
+      where: { userId },
+      include: {
+        recipe: {
+          include: {
+            cuisine: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return favorites.map((f) => f.recipe);
+  }
+
+  /**
+   * 获取用户创建的菜谱
+   */
+  async getMyRecipes(userId: number) {
+    return this.prisma.recipe.findMany({
+      where: { createdBy: userId, status: 1 },
+      include: {
+        cuisine: { select: { id: true, name: true, slug: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
    * 获取当前用户信息
    */
   async getProfile(userId: number) {

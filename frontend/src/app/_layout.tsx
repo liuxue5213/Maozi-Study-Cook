@@ -50,6 +50,55 @@ export default function RootLayout() {
             title: '菜系详情',
           }}
         />
+        <Stack.Screen
+          name="search"
+          options={{
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="favorites"
+          options={{
+            headerShown: true,
+            title: '我的收藏',
+          }}
+        />
+        <Stack.Screen
+          name="checkin"
+          options={{
+            headerShown: true,
+            title: '打卡日历',
+          }}
+        />
+        <Stack.Screen
+          name="my-recipes"
+          options={{
+            headerShown: true,
+            title: '我的菜谱',
+          }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{
+            headerShown: true,
+            title: '偏好设置',
+          }}
+        />
+        <Stack.Screen
+          name="help"
+          options={{
+            headerShown: true,
+            title: '帮助与反馈',
+          }}
+        />
+        <Stack.Screen
+          name="about"
+          options={{
+            headerShown: true,
+            title: '关于我们',
+          }}
+        />
       </Stack>
     </>
   );

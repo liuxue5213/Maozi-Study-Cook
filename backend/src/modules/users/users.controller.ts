@@ -25,12 +25,20 @@ export class UsersController {
     return this.usersService.updateProfile(userId, data);
   }
 
-  @Get('me/preferences')
+  @Get('me/favorites')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '获取偏好设置' })
-  async getPreferences(@CurrentUser('id') userId: number) {
-    return this.usersService.getPreferences(userId);
+  @ApiOperation({ summary: '获取我的收藏' })
+  async getFavorites(@CurrentUser('id') userId: number) {
+    return this.usersService.getFavorites(userId);
+  }
+
+  @Get('me/recipes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取我创建的菜谱' })
+  async getMyRecipes(@CurrentUser('id') userId: number) {
+    return this.usersService.getMyRecipes(userId);
   }
 
   @Put('me/preferences')

@@ -61,24 +61,24 @@ export default function HomeScreen() {
           {user?.nickname ? `今天想学做什么菜？` : '登录开始你的烹饪之旅'}
         </Text>
 
-        {/* 快捷入口 */}
-        <View className="flex-row mt-5 space-x-4">
-          <QuickAction
-            icon="camera"
-            label="拍照识别"
-            onPress={() => router.push('/camera')}
-          />
-          <QuickAction
-            icon="search"
-            label="搜索菜谱"
-            onPress={() => {}}
-          />
-          <QuickAction
-            icon="calendar"
-            label="今日打卡"
-            onPress={() => router.push('/(tabs)/community')}
-          />
-        </View>
+          {/* 快捷入口 */}
+          <View className="flex-row mt-5 space-x-4">
+            <QuickAction
+              icon="camera"
+              label="拍照识别"
+              onPress={() => router.push('/camera')}
+            />
+            <QuickAction
+              icon="search"
+              label="搜索菜谱"
+              onPress={() => router.push('/(tabs)/cuisines')}
+            />
+            <QuickAction
+              icon="calendar"
+              label="今日打卡"
+              onPress={() => router.push('/(tabs)/community')}
+            />
+          </View>
       </View>
 
       {/* 菜系分类 */}
