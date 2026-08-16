@@ -1,24 +1,45 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 /**
  * API 基础 URL 配置
  * 根据运行环境自动选择
+ *
+ * 优先级：
+ * 1. 环境变量 EXPO_PUBLIC_API_URL（手动指定）
+ * 2. Web 开发: localhost:3000
+ * 3. Web 生产: 相对路径（Nginx 代理）
+ * 4. APK 开发: 开发机局域网 IP
+ * 5. APK 生产: 服务器 IP
  */
 const getBaseUrl = () => {
+  // 1. 环境变量手动指定
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl) return envUrl;
+
   if (Platform.OS === 'web') {
     if (__DEV__) {
-      // Web 开发模式：直连本地后端（CORS 已放开）
       return 'http://localhost:3000/api';
     }
     // Web 生产：使用相对路径（通过 Nginx 代理）
     return '/api';
   }
-  // 真机/模拟器：使用局域网地址或生产地址
-  return __DEV__
-    ? 'http://localhost:3000/api'
-    : 'https://your-domain.com/api';
+
+  // APK / 真机
+  if (__DEV__) {
+    // 开发模式：Expo Go 真机需要用开发机的局域网 IP
+    const hostUri = Constants.expoConfig?.hostUri;
+    if (hostUri) {
+      const devIP = hostUri.split(':')[0];
+      return `http://${devIP}:3000/api`;
+    }
+    return 'http://localhost:3000/api';
+  }
+
+  // APK 生产：指向服务器
+  return 'http://120.48.13.152:3000/api';
 };
 
 /**

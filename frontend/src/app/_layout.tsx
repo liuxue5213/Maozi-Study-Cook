@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../../global.css';
 
 // 防止启动屏自动隐藏
@@ -14,7 +15,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -100,6 +101,6 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </>
+    </SafeAreaProvider>
   );
 }

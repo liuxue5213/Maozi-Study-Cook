@@ -7,9 +7,12 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Platform,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { recipeService } from '../../services/recipeService';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -114,16 +117,18 @@ export default function RecipeDetailScreen() {
     <View className="flex-1 bg-cooking-background">
       <ScrollView className="flex-1">
         {/* 封面 */}
-        <View className="w-full h-56 bg-gray-100 items-center justify-center">
-          {recipe.coverImage ? (
-            <View className="w-full h-full bg-orange-100 items-center justify-center">
-              <Ionicons name="image-outline" size={48} color="#f97316" />
-              <Text className="text-cooking-main text-xs mt-2">菜品预览图</Text>
-            </View>
-          ) : (
+        {recipe.coverImage ? (
+          <Image
+            source={{ uri: recipe.coverImage }}
+            className="w-full h-56"
+            resizeMode="cover"
+            defaultSource={require('../../assets/icon.png')}
+          />
+        ) : (
+          <View className="w-full h-56 bg-gray-100 items-center justify-center">
             <Text className="text-6xl">🍲</Text>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* 基本信息 */}
         <View className="bg-white px-4 py-5">
@@ -313,39 +318,13 @@ export default function RecipeDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* 底部操作栏 */}
-      <View className="bg-white border-t border-gray-100 px-4 py-3 flex-row items-center">
-        <TouchableOpacity
-          className="flex-row items-center mr-6"
-          onPress={handleLike}
-        >
-          <Ionicons
-            name={recipe.isLiked ? 'heart' : 'heart-outline'}
-            size={22}
-            color={recipe.isLiked ? '#ef4444' : '#6b7280'}
-          />
-          <Text className="text-cooking-muted text-sm ml-1">点赞</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center"
-          onPress={handleFavorite}
-        >
-          <Ionicons
-            name={recipe.isFavorited ? 'star' : 'star-outline'}
-            size={22}
-            color={recipe.isFavorited ? '#f59e0b' : '#6b7280'}
-          />
-          <Text className="text-cooking-muted text-sm ml-1">收藏</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="ml-auto bg-cooking-main px-6 py-2 rounded-full"
-          onPress={() => setShowCookModal(true)}
-        >
-          <Text className="text-white font-medium">去做这道菜</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 底部操作栏（安全区适配，避免与虚拟按键重叠） */}
+      <BottomActionBar
+        recipe={recipe}
+        onLike={handleLike}
+        onFavorite={handleFavorite}
+        onCook={() => setShowCookModal(true)}
+      />
 
       {/* 做菜功能弹窗 */}
       <Modal
@@ -460,6 +439,59 @@ function NutritionItem({
         {unit}
       </Text>
       <Text className="text-cooking-muted text-xs mt-1">{label}</Text>
+    </View>
+  );
+}
+
+function BottomActionBar({
+  recipe,
+  onLike,
+  onFavorite,
+  onCook,
+}: {
+  recipe: any;
+  onLike: () => void;
+  onFavorite: () => void;
+  onCook: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Platform.OS === 'web' ? 12 : Math.max(insets.bottom, 10);
+
+  return (
+    <View
+      style={{ paddingBottom: bottomPad }}
+      className="bg-white border-t border-gray-100 px-4 pt-3 flex-row items-center"
+    >
+      <TouchableOpacity
+        className="flex-row items-center mr-6"
+        onPress={onLike}
+      >
+        <Ionicons
+          name={recipe.isLiked ? 'heart' : 'heart-outline'}
+          size={22}
+          color={recipe.isLiked ? '#ef4444' : '#6b7280'}
+        />
+        <Text className="text-cooking-muted text-sm ml-1">点赞</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        className="flex-row items-center"
+        onPress={onFavorite}
+      >
+        <Ionicons
+          name={recipe.isFavorited ? 'star' : 'star-outline'}
+          size={22}
+          color={recipe.isFavorited ? '#f59e0b' : '#6b7280'}
+        />
+        <Text className="text-cooking-muted text-sm ml-1">收藏</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        className="ml-auto bg-cooking-main px-6 py-2 rounded-full"
+        onPress={onCook}
+      >
+        <Text className="text-white font-medium">去做这道菜</Text>
+      </TouchableOpacity>
     </View>
   );
 }

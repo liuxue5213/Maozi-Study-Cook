@@ -3,13 +3,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './modules/common/interceptors/transform.interceptor';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // 安全中间件
   app.use(helmet());
+
+  // 静态文件服务：/uploads/ 目录下的文件可通过 HTTP 直接访问
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // 全局响应包装（统一 {code, message, data, timestamp} 格式）
   app.useGlobalInterceptors(new TransformInterceptor());

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -116,9 +117,17 @@ export default function HomeScreen() {
             className="bg-white rounded-xl p-4 mb-3 flex-row shadow-sm"
             onPress={() => router.push(`/recipe/${recipe.id}`)}
           >
-            <View className="w-20 h-20 bg-gray-100 rounded-lg items-center justify-center">
-              <Text className="text-3xl">🍲</Text>
-            </View>
+            {recipe.coverImage ? (
+              <Image
+                source={{ uri: recipe.coverImage }}
+                className="w-20 h-20 rounded-lg"
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="w-20 h-20 bg-gray-100 rounded-lg items-center justify-center">
+                <Text className="text-3xl">🍲</Text>
+              </View>
+            )}
             <View className="flex-1 ml-3 justify-center">
               <Text className="text-base font-semibold text-cooking-text">
                 {recipe.title}
