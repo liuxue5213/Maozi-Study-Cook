@@ -137,6 +137,8 @@ model Ingredient {
 
   recipes RecipeIngredient[]
 
+  @@index([name])
+  @@index([category])
   @@map("ingredients")
 }
 
@@ -152,6 +154,8 @@ model RecipeIngredient {
   sortOrder      Int     @default(0)
 
   @@index([ingredientId])
+  @@index([recipeId])
+  @@index([name])
   @@map("recipe_ingredients")
 }
 
@@ -204,6 +208,7 @@ model PostImage {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
+  @@index([postId])
   @@map("post_images")
 }
 
@@ -245,6 +250,7 @@ model Favorite {
   createdAt DateTime @default(now())
 
   @@unique([userId, recipeId])
+  @@index([recipeId])
   @@map("favorites")
 }
 

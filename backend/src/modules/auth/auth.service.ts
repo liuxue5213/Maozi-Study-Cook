@@ -35,18 +35,35 @@ export class AuthService {
    * 用户注册
    */
   async register(dto: RegisterDto) {
-    // 校验：邮箱或手机号至少有一个
-    if (!dto.email && !dto.phone) {
+    // 去除首尾空格，空字符串归一化为 undefined
+    const email = dto.email?.trim() || undefined;
+    const phone = dto.phone?.trim() || undefined;
+    const username = dto.username?.trim();
+
+    if (!username) {
+      throw new BadRequestException('用户名不能为空');
+    }
+
+    // 校验：邮箱或手机号至少有一个有效值
+    if (!email && !phone) {
       throw new BadRequestException('邮箱或手机号至少填写一个');
+    }
+
+    // 简单格式校验
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new BadRequestException('邮箱格式不正确');
+    }
+    if (phone && !/^1\d{10}$/.test(phone)) {
+      throw new BadRequestException('手机号格式不正确');
     }
 
     // 检查用户名唯一性
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { username: dto.username },
-          dto.email ? { email: dto.email } : undefined,
-          dto.phone ? { phone: dto.phone } : undefined,
+          { username },
+          email ? { email } : undefined,
+          phone ? { phone } : undefined,
         ].filter(Boolean),
       },
     });
@@ -62,11 +79,11 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         uuid: uuidv4(),
-        username: dto.username,
-        email: dto.email,
-        phone: dto.phone,
+        username,
+        email,
+        phone,
         password: hashedPassword,
-        nickname: dto.nickname || dto.username,
+        nickname: dto.nickname?.trim() || username,
       },
       select: {
         id: true,

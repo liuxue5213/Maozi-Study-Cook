@@ -1,6 +1,69 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 
+/**
+ * 食材匹配工具：
+ * 1. 精确匹配优先（"鸡" 不应匹配 "鸡翅"）
+ * 2. 允许合理的形态变体（"土豆"/"马铃薯"、"猪肉"/"瘦肉"）
+ * 3. 禁止单字无差别子串匹配
+ */
+export function matchIngredient(source: string, target: string): boolean {
+  if (!source || !target) return false;
+  const s = source.trim();
+  const t = target.trim();
+  if (!s || !t) return false;
+
+  // 精确相等
+  if (s === t) return true;
+
+  // 常见食材别名归一化表
+  const aliasGroups: string[][] = [
+    ['土豆', '马铃薯', '洋芋'],
+    ['西红柿', '番茄'],
+    ['青椒', '柿子椒', '甜椒'],
+    ['猪肉', '瘦肉', '里脊', '五花肉'],
+    ['鸡蛋', '土鸡蛋', '蛋'],
+    ['豆腐', '嫩豆腐', '老豆腐', '北豆腐', '南豆腐'],
+    ['大蒜', '蒜', '蒜头'],
+    ['小葱', '香葱', '葱'],
+  ];
+
+  const normalize = (name: string): string[] => {
+    const result = [name];
+    for (const group of aliasGroups) {
+      if (group.some((alias) => name.includes(alias))) {
+        result.push(...group);
+      }
+    }
+    return result;
+  };
+
+  const sSet = new Set(normalize(s));
+  const tSet = new Set(normalize(t));
+
+  // 别名组交集
+  for (const item of sSet) {
+    if (tSet.has(item)) return true;
+  }
+
+  // 双向包含仅允许：长的一方长度 >= 3 且短的一方长度 >= 2
+  // 避免 "鸡" 匹配 "鸡翅"、"肉" 匹配 "牛肉" 这类误匹配
+  const shorter = s.length <= t.length ? s : t;
+  const longer = s.length <= t.length ? t : s;
+  if (shorter.length >= 2 && longer.includes(shorter)) {
+    // 排除特定部位词误匹配：部位词必须精确匹配
+    const partWords = ['翅', '爪', '肝', '排', '骨', '肚', '舌', '皮', '尾', '头', '心', '肠', '血'];
+    if (partWords.some((w) => shorter.endsWith(w) || longer.endsWith(w))) {
+      // 部位词参与匹配时要求另一方不是泛称
+      const generic = ['肉', '鸡肉', '猪肉', '牛肉', '羊肉', '鸭肉'];
+      if (generic.includes(shorter)) return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
 @Injectable()
 export class RecipesService {
   constructor(private prisma: PrismaService) {}
@@ -187,9 +250,7 @@ export class RecipesService {
       .map((recipe) => {
         const mainIngredients = recipe.ingredients.filter((i) => i.isMain);
         const matchedMain = mainIngredients.filter((i) =>
-          ingredients.some(
-            (ing) => i.name.includes(ing) || ing.includes(i.name),
-          ),
+          ingredients.some((ing) => matchIngredient(i.name, ing)),
         );
         const matchScore =
           mainIngredients.length > 0

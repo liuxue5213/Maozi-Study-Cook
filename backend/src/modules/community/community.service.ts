@@ -33,7 +33,14 @@ export class CommunityService {
         orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: {
+        select: {
+          id: true,
+          content: true,
+          type: true,
+          likeCount: true,
+          commentCount: true,
+          isCheckin: true,
+          createdAt: true,
           user: {
             select: { id: true, uuid: true, nickname: true, avatar: true },
           },
@@ -43,9 +50,7 @@ export class CommunityService {
           images: {
             orderBy: { sortOrder: 'asc' },
             take: 9,
-          },
-          _count: {
-            select: { comments: true, likes: true },
+            select: { imageUrl: true },
           },
         },
       }),
@@ -69,7 +74,14 @@ export class CommunityService {
   async getPost(id: number, currentUserId?: number) {
     const post = await this.prisma.post.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        content: true,
+        type: true,
+        likeCount: true,
+        commentCount: true,
+        isCheckin: true,
+        createdAt: true,
         user: {
           select: { id: true, uuid: true, nickname: true, avatar: true },
         },
@@ -78,9 +90,7 @@ export class CommunityService {
         },
         images: {
           orderBy: { sortOrder: 'asc' },
-        },
-        _count: {
-          select: { comments: true, likes: true },
+          select: { imageUrl: true },
         },
       },
     });
@@ -333,7 +343,7 @@ export class CommunityService {
 
     // 生成日历数据
     const daysInMonth = endDate.getDate();
-    const calendar = [];
+    const calendar: { date: string; checked: boolean; note?: string | null }[] = [];
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month - 1, day);
       const checkIn = checkIns.find(

@@ -10,6 +10,7 @@ interface User {
   phone?: string;
   nickname?: string;
   avatar?: string;
+  bio?: string;
 }
 
 interface AuthState {

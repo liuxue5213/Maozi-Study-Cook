@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { matchIngredient } from '../recipes/recipes.service';
 
 @Injectable()
 export class AiService {
@@ -16,10 +17,10 @@ export class AiService {
     private httpService: HttpService,
     private prisma: PrismaService,
   ) {
-    this.apiKey = this.configService.get('ai.apiKey');
-    this.baseUrl = this.configService.get('ai.baseUrl');
-    this.visionModel = this.configService.get('ai.visionModel');
-    this.textModel = this.configService.get('ai.textModel');
+    this.apiKey = this.configService.get<string>('ai.apiKey') || '';
+    this.baseUrl = this.configService.get<string>('ai.baseUrl') || 'https://dashscope.aliyuncs.com/api/v1';
+    this.visionModel = this.configService.get<string>('ai.visionModel') || 'qwen-vl-plus';
+    this.textModel = this.configService.get<string>('ai.textModel') || 'qwen-plus';
   }
 
   /**
@@ -43,7 +44,7 @@ export class AiService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post(
+        this.httpService.post<any>(
           `${this.baseUrl}/services/aigc/multimodal-generation/generation`,
           {
             model: this.visionModel,
@@ -73,20 +74,12 @@ export class AiService {
         ),
       );
 
-      // 解析 AI 返回结果
+      // 解析 AI 返回结果（兼容 string / array / object 多种返回格式）
       const output = response.data?.output?.choices?.[0]?.message?.content;
-      let result;
-
-      if (typeof output === 'string') {
-        result = this.parseAiOutput(output);
-      } else if (Array.isArray(output)) {
-        // 通义千问返回格式可能是数组
-        const textContent = output.find((c: any) => c.text);
-        result = this.parseAiOutput(textContent?.text || '');
-      }
+      const result = this.extractAiResult(output);
 
       return {
-        items: result?.items || [],
+        items: Array.isArray(result?.items) ? result.items : [],
         raw: output,
       };
     } catch (error) {
@@ -133,9 +126,7 @@ export class AiService {
       .map((recipe) => {
         const mainIngredients = recipe.ingredients.filter((i) => i.isMain);
         const matchedMain = mainIngredients.filter((i) =>
-          ingredients.some(
-            (ing) => i.name.includes(ing) || ing.includes(i.name),
-          ),
+          ingredients.some((ing) => matchIngredient(i.name, ing)),
         );
         const matchScore =
           mainIngredients.length > 0
@@ -145,9 +136,7 @@ export class AiService {
         const missingIngredients = mainIngredients
           .filter(
             (i) =>
-              !ingredients.some(
-                (ing) => i.name.includes(ing) || ing.includes(i.name),
-              ),
+              !ingredients.some((ing) => matchIngredient(i.name, ing)),
           )
           .map((i) => i.name);
 
@@ -204,7 +193,7 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post(
+        this.httpService.post<any>(
           `${this.baseUrl}/services/aigc/text-generation/generation`,
           {
             model: this.textModel,
@@ -228,15 +217,17 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
       );
 
       const output = response.data?.output?.choices?.[0]?.message?.content;
-      const result = this.parseAiOutput(output);
+      const result = this.extractAiResult(output);
 
-      return (
-        result?.recommendations?.map((rec: any) => ({
-          ...rec,
-          source: 'ai',
-          matchScore: 0.5,
-        })) || []
-      );
+      const recommendations = Array.isArray(result?.recommendations)
+        ? result.recommendations
+        : [];
+
+      return recommendations.map((rec: any) => ({
+        ...rec,
+        source: 'ai',
+        matchScore: 0.5,
+      }));
     } catch (error) {
       console.error('AI 推荐失败:', error.response?.data || error.message);
       return [];
@@ -270,7 +261,7 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post(
+        this.httpService.post<any>(
           `${this.baseUrl}/services/aigc/text-generation/generation`,
           {
             model: this.textModel,
@@ -294,11 +285,39 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
       );
 
       const output = response.data?.output?.choices?.[0]?.message?.content;
-      return this.parseAiOutput(output);
+      return this.extractAiResult(output);
     } catch (error) {
       console.error('AI 生成步骤失败:', error.response?.data || error.message);
       throw new BadRequestException('生成步骤失败，请稍后重试');
     }
+  }
+
+  /**
+   * 提取 AI 返回结果
+   * 兼容三种格式：纯字符串 / 数组 [{text: '...'}] / 对象
+   */
+  private extractAiResult(output: any): any {
+    if (!output) return {};
+
+    // 数组格式：提取所有 text 拼接
+    if (Array.isArray(output)) {
+      const text = output
+        .map((c: any) => (typeof c === 'string' ? c : c?.text || ''))
+        .join('');
+      return this.parseAiOutput(text);
+    }
+
+    // 字符串格式
+    if (typeof output === 'string') {
+      return this.parseAiOutput(output);
+    }
+
+    // 已是对象
+    if (typeof output === 'object') {
+      return output;
+    }
+
+    return {};
   }
 
   /**
@@ -307,8 +326,8 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
   private parseAiOutput(output: string) {
     if (!output) return {};
 
+    // 尝试直接解析
     try {
-      // 尝试直接解析
       return JSON.parse(output);
     } catch {
       // 尝试去除 markdown 代码块
@@ -322,7 +341,11 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
         // 尝试提取 JSON 部分
         const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch {
+            return {};
+          }
         }
         return {};
       }

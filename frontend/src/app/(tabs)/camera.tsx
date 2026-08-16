@@ -80,6 +80,11 @@ export default function CameraScreen() {
         const ingredientNames = items.map((i: any) => i.name);
         const recRes = await aiService.recommend(ingredientNames);
         setRecommendations(recRes.data || []);
+      } else if (items.length === 0) {
+        Alert.alert(
+          '识别结果为空',
+          '未能识别出图片中的内容，请尝试光线更充足、食材更清晰的照片',
+        );
       }
     } catch (error: any) {
       Alert.alert('识别失败', error.message || '请稍后重试');
@@ -237,6 +242,23 @@ export default function CameraScreen() {
           ))}
         </View>
       )}
+
+      {/* 识别成功但无推荐 */}
+      {recognizedItems.length > 0 &&
+        recommendations.length === 0 &&
+        !recognizing && (
+          <View className="px-4 pb-8 items-center">
+            <View className="bg-white rounded-xl px-6 py-8 items-center w-full">
+              <Text className="text-3xl mb-2">🤔</Text>
+              <Text className="text-cooking-text font-medium mb-1">
+                暂时没有找到匹配的菜谱
+              </Text>
+              <Text className="text-cooking-muted text-sm text-center leading-5">
+                识别出的食材组合暂无推荐，{'\n'}可以尝试添加更多食材再试
+              </Text>
+            </View>
+          </View>
+        )}
     </ScrollView>
   );
 }

@@ -79,12 +79,8 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch {
-        // 刷新失败，清除登录状态
-        await AsyncStorage.multiRemove([
-          'accessToken',
-          'refreshToken',
-          'user',
-        ]);
+        // 刷新失败，清除登录状态并跳转登录页
+        await forceLogout();
       }
     }
 
@@ -94,3 +90,26 @@ apiClient.interceptors.response.use(
     return Promise.reject(new Error(message));
   },
 );
+
+/**
+ * 强制登出（Token 失效时调用）
+ * 动态导入避免循环依赖，硬编码路径保证 Web/RN 通用
+ */
+export async function forceLogout() {
+  try {
+    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
+  } catch {
+    // 存储清理失败不影响跳转
+  }
+
+  // 使用 expo-router 跳转登录页（动态导入避免模块初始化顺序问题）
+  try {
+    const { router } = await import('expo-router');
+    router.replace('/(auth)/login');
+  } catch {
+    // Web 端兜底：刷新页面让入口逻辑重新判断登录态
+    if (typeof window !== 'undefined') {
+      window.location.href = '/(auth)/login';
+    }
+  }
+}

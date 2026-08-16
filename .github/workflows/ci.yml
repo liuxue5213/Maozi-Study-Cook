@@ -36,6 +36,10 @@ jobs:
         working-directory: ./backend
         run: npm run lint
 
+      - name: 运行单元测试
+        working-directory: ./backend
+        run: npm test
+
       - name: 构建测试
         working-directory: ./backend
         run: npm run build

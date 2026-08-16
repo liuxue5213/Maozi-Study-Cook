@@ -32,8 +32,10 @@ jobs:
 
             cd /var/www/Maozi-Study-Cook/backend
 
-            # 拉取最新代码
-            git pull origin main
+            # 拉取最新代码（强制与远端一致，避免本地冲突导致部署失败）
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd --exclude=node_modules --exclude=.env --exclude=uploads
 
             # 安装依赖
             npm ci
@@ -61,14 +63,16 @@ jobs:
 
             cd /var/www/Maozi-Study-Cook/frontend
 
-            # 拉取最新代码
-            git pull origin main
+            # 拉取最新代码（强制与远端一致）
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd --exclude=node_modules
 
             # 安装依赖
             npm ci
 
             # 构建 Web 版本
-            npx expo export:web
+            npx expo export --platform web
 
             # 复制到 Nginx 目录
             sudo cp -r dist/* /var/www/html/

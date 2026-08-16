@@ -18,22 +18,24 @@ import { communityService } from '../../services/communityService';
  */
 export default function CommunityScreen() {
   const { user, isAuthenticated } = useAuthStore();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  // tab: hot=推荐 new=最新 follow=关注
+  const [activeTab, setActiveTab] = useState<'hot' | 'new' | 'follow'>('hot');
 
   useEffect(() => {
-    loadPosts();
-  }, []);
+    loadPosts(1, true);
+  }, [activeTab]);
 
   const loadPosts = async (pageNum = 1, refresh = false) => {
     try {
       const res = await communityService.getPosts({
         page: pageNum,
         pageSize: 20,
-        sortBy: 'hot',
+        sortBy: activeTab === 'new' ? 'new' : 'hot',
       });
       const newPosts = res.data?.list || [];
 
@@ -56,7 +58,7 @@ export default function CommunityScreen() {
   const onRefresh = useCallback(() => {
     setIsRefreshing(true);
     loadPosts(1, true);
-  }, []);
+  }, [activeTab]);
 
   const loadMore = () => {
     if (!isLoading && hasMore) {
@@ -76,19 +78,30 @@ export default function CommunityScreen() {
     <View className="flex-1 bg-cooking-background">
       {/* 顶部 Tab */}
       <View className="flex-row px-4 pt-3 pb-2 bg-white border-b border-gray-100">
-        {['推荐', '最新', '关注'].map((tab, idx) => (
+        {(
+          [
+            { key: 'hot', label: '推荐' },
+            { key: 'new', label: '最新' },
+            { key: 'follow', label: '关注' },
+          ] as const
+        ).map((tab) => (
           <TouchableOpacity
-            key={tab}
-            className={`px-4 py-2 mr-4 ${idx === 0 ? 'border-b-2 border-cooking-main' : ''}`}
+            key={tab.key}
+            className={`px-4 py-2 mr-4 ${
+              activeTab === tab.key
+                ? 'border-b-2 border-cooking-main'
+                : ''
+            }`}
+            onPress={() => setActiveTab(tab.key)}
           >
             <Text
               className={`text-sm ${
-                idx === 0
+                activeTab === tab.key
                   ? 'text-cooking-main font-semibold'
                   : 'text-cooking-muted'
               }`}
             >
-              {tab}
+              {tab.label}
             </Text>
           </TouchableOpacity>
         ))}

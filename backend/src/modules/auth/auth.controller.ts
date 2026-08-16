@@ -8,6 +8,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // ============ 公开接口（无需认证）============
+
   @Post('register')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '用户注册' })
@@ -28,6 +30,8 @@ export class AuthController {
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshTokens(dto.refreshToken);
   }
+
+  // ============ 需要认证的接口 ============
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)

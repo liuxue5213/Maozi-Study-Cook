@@ -1,5 +1,5 @@
-import { Controller, Post, UseInterceptors, UploadedFile, Body, UseGuards } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, UseInterceptors, UploadedFiles, UploadedFile, Body, UseGuards } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { UploadService } from './upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,12 +32,12 @@ export class UploadController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '批量上传图片（最多9张）' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('files', 9))
+  @UseInterceptors(FilesInterceptor('files', 9))
   async uploadImages(
-    @UploadedFile() files: Express.Multer.File[],
+    @UploadedFiles() files: Express.Multer.File[],
     @Body('folder') folder: string = 'post',
   ) {
-    const results = [];
+    const results: { url: string; filename: string; size: number }[] = [];
     for (const file of files) {
       const url = await this.uploadService.saveFile(file, folder);
       results.push({

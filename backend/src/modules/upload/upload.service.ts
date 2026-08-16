@@ -30,7 +30,7 @@ export class UploadService {
   }
 
   /**
-   * 验证文件
+   * 验证文件（MIME + 文件头魔数双重校验）
    */
   validateFile(file: Express.Multer.File) {
     if (!file) {
@@ -46,6 +46,46 @@ export class UploadService {
         `文件大小不能超过 ${Math.round(this.maxFileSize / 1024 / 1024)}MB`,
       );
     }
+
+    // 魔数校验：防止伪造 MIME 类型上传非图片文件
+    if (!this.isValidImageBuffer(file.buffer)) {
+      throw new BadRequestException('文件内容不是有效的图片');
+    }
+  }
+
+  /**
+   * 通过文件头魔数判断是否为真实图片
+   * JPEG: FF D8 FF
+   * PNG: 89 50 4E 47
+   * WebP: "RIFF" 头 + "WEBP" 标识
+   */
+  private isValidImageBuffer(buffer: Buffer): boolean {
+    if (!buffer || buffer.length < 12) return false;
+
+    // JPEG
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+      return true;
+    }
+
+    // PNG
+    if (
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47
+    ) {
+      return true;
+    }
+
+    // WebP（RIFF....WEBP）
+    if (
+      buffer.toString('ascii', 0, 4) === 'RIFF' &&
+      buffer.toString('ascii', 8, 12) === 'WEBP'
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
