@@ -1,6 +1,26 @@
-@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 基础重置 (替代 @tailwind base，避免 aspect-ratio 解析 Bug) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 /* ============ 桌面端 / 大屏适配 ============ */
 /* 768px 以上：应用以手机宽度居中展示，避免移动端 UI 被拉伸铺满宽屏 */
