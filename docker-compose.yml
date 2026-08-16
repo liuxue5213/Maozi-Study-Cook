@@ -60,7 +60,7 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: 60135
       DATABASE_URL: mysql://${DB_USER:-maozi}:${DB_PASSWORD:-maozi_password}@mysql:3306/maozi_cook
       REDIS_URL: redis://:${REDIS_PASSWORD:-maozi_redis_password}@redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
@@ -71,7 +71,7 @@ services:
       AI_TEXT_MODEL: ${AI_TEXT_MODEL:-qwen-plus}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
     ports:
-      - "3000:3000"
+      - "60135:60135"
     volumes:
       - backend_uploads:/app/uploads
     depends_on:

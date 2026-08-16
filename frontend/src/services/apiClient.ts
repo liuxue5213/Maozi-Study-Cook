@@ -9,7 +9,7 @@ import Constants from 'expo-constants';
  *
  * 优先级：
  * 1. 环境变量 EXPO_PUBLIC_API_URL（手动指定）
- * 2. Web 开发: localhost:3000
+ * 2. Web 开发: localhost:60135
  * 3. Web 生产: 相对路径（Nginx 代理）
  * 4. APK 开发: 开发机局域网 IP
  * 5. APK 生产: 服务器 IP
@@ -21,7 +21,7 @@ const getBaseUrl = () => {
 
   if (Platform.OS === 'web') {
     if (__DEV__) {
-      return 'http://localhost:3000/api';
+      return 'http://localhost:60135/api';
     }
     // Web 生产：使用相对路径（通过 Nginx 代理）
     return '/api';
@@ -33,13 +33,13 @@ const getBaseUrl = () => {
     const hostUri = Constants.expoConfig?.hostUri;
     if (hostUri) {
       const devIP = hostUri.split(':')[0];
-      return `http://${devIP}:3000/api`;
+      return `http://${devIP}:60135/api`;
     }
-    return 'http://localhost:3000/api';
+    return 'http://localhost:60135/api';
   }
 
   // APK 生产：指向服务器
-  return 'http://120.48.13.152:3000/api';
+  return 'http://120.48.13.152:60135/api';
 };
 
 /**

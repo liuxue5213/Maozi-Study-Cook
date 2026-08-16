@@ -188,12 +188,12 @@ npm run start:dev
 
 ```bash
 # 先登录获取 Token
-TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:60135/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"account":"你的账号","password":"你的密码"}' | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['accessToken'])")
 
 # 测试食材识别（用 base64 图片）
-curl -s -X POST http://localhost:3000/api/ai/recognize-base64 \
+curl -s -X POST http://localhost:60135/api/ai/recognize-base64 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"image": "你的图片base64", "type": "ingredient"}' | python3 -m json.tool
@@ -202,7 +202,7 @@ curl -s -X POST http://localhost:3000/api/ai/recognize-base64 \
 ### 3. 测试推荐菜谱
 
 ```bash
-curl -s -X POST http://localhost:3000/api/ai/recommend \
+curl -s -X POST http://localhost:60135/api/ai/recommend \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"ingredients": ["豆腐", "青椒", "猪肉"]}' | python3 -m json.tool

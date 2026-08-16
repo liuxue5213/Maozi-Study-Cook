@@ -158,7 +158,7 @@ cd backend
 cp .env.example .env        # 配置环境变量
 pnpm install
 pnpm prisma migrate dev     # 初始化数据库
-pnpm run start:dev          # 启动后端 http://localhost:3000
+pnpm run start:dev          # 启动后端 http://localhost:60135
 
 # 3. 启动前端（新终端）
 cd frontend
@@ -166,7 +166,7 @@ pnpm install
 pnpm expo start             # 启动 Expo 开发服务器
 
 # 4. 访问
-# Web: 浏览器打开 http://localhost:8081
+# Web: 浏览器打开 http://localhost:60130
 # Android: 用 Expo Go 扫描二维码
 # iOS: 用相机扫描二维码
 ```
@@ -191,7 +191,7 @@ AI_BASE_URL="https://dashscope.aliyuncs.com/api/v1"
 AI_VISION_MODEL="qwen-vl-plus"
 
 # 服务器
-PORT=3000
+PORT=60135
 CORS_ORIGIN="*"
 
 # 文件上传

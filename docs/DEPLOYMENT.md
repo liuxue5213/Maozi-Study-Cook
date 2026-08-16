@@ -17,15 +17,15 @@
 |------|------|------|
 | 80 | Nginx | HTTP |
 | 443 | Nginx | HTTPS（待配置 SSL） |
-| 3000 | NestJS | 后端 API（通过 Nginx 代理） |
+| 60135 | NestJS | 后端 API（通过 Nginx 代理） |
 | 3306 | MySQL | 数据库 |
 | 6379 | Redis | 缓存 |
-| 8081 | Expo Dev | 前端开发（生产不暴露） |
+| 60130 | Expo Dev | 前端开发（生产不暴露） |
 
 ## 3. 部署架构
 
 ```
-用户 → Nginx(:80) → /api/* → NestJS(:3000)
+用户 → Nginx(:80) → /api/* → NestJS(:60135)
                      → /*   → 前端静态文件
 ```
 
@@ -140,7 +140,7 @@ server {
 
     # API 代理
     location /api/ {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:60135;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -227,5 +227,5 @@ crontab -e
 |------|----------|
 | PM2 进程退出 | `pm2 logs` 查看日志，检查 .env 配置 |
 | 数据库连接失败 | 检查 MySQL 是否运行：`systemctl status mysql` |
-| 端口被占用 | `lsof -i :3000` 查看占用进程 |
+| 端口被占用 | `lsof -i :60135` 查看占用进程 |
 | 内存不足 | 添加 Swap 或优化 PM2 配置 |

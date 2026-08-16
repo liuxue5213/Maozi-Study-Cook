@@ -51,5 +51,5 @@ src/
 
 前端通过 `apiClient.ts` 自动根据运行环境选择 API 地址：
 - Web: `/api`（通过 Nginx 代理）
-- 开发模式: `http://120.48.13.152:3000/api`
+- 开发模式: `http://120.48.13.152:60135/api`
 - 生产模式: `https://your-domain.com/api`
