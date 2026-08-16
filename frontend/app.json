@@ -22,7 +22,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#f97316"
       },
       "package": "com.maozi.studycook",
       "versionCode": 1,
