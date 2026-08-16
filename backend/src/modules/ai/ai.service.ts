@@ -30,14 +30,40 @@ export class AiService {
    */
   async recognize(imageBase64: string, type: string = 'ingredient') {
     if (!this.apiKey) {
-      throw new BadRequestException('AI 服务未配置');
+      throw new BadRequestException('AI 服务未配置，请在 .env 中设置 AI_API_KEY');
     }
 
-    // 根据类型构建不同的 prompt
+    // 根据类型构建不同的 prompt（更详细的提示词提高识别准确率）
     const prompts: Record<string, string> = {
-      food: '请识别这张图片中的菜品名称。返回 JSON 格式：{"items": [{"name": "菜品名", "confidence": 0.95, "category": "菜系/分类"}]}',
-      ingredient: '请识别这张图片中的食材（蔬菜、肉类、调料等）。返回 JSON 格式：{"items": [{"name": "食材名", "confidence": 0.95, "category": "蔬菜/肉类/水产/调料/豆制品/主食"}]}',
-      fridge: '请识别这张冰箱照片中的所有食材。返回 JSON 格式：{"items": [{"name": "食材名", "confidence": 0.95, "category": "蔬菜/肉类/水产/调料/豆制品/主食"}]}',
+      food: `你是一位专业的中餐厨师。请识别这张图片中的菜品。
+要求：
+1. 识别菜品名称（具体到菜名，如"麻婆豆腐"而非"豆腐"）
+2. 判断所属菜系（川菜/鲁菜/粤菜/苏菜/浙菜/闽菜/湘菜/徽菜/其他）
+3. 列出主要食材
+4. 给出置信度（0-1之间）
+
+严格按以下 JSON 格式返回，不要返回其他内容：
+{"items": [{"name": "菜品名", "cuisine": "菜系", "ingredients": ["食材1", "食材2"], "confidence": 0.95}]}`,
+
+      ingredient: `你是一位专业的食材识别专家。请识别这张图片中的所有食材。
+要求：
+1. 逐一列出所有可见的食材（蔬菜、肉类、水产、调料、豆制品、主食等）
+2. 标注食材分类（蔬菜/肉类/水产/调料/豆制品/主食/水果/其他）
+3. 如果是加工食材（如"五花肉"、"嫩豆腐"），请标注具体名称
+4. 给出置信度（0-1之间）
+
+严格按以下 JSON 格式返回，不要返回其他内容：
+{"items": [{"name": "食材名", "category": "蔬菜/肉类/水产/调料/豆制品/主食/水果/其他", "confidence": 0.95}]}`,
+
+      fridge: `你是一位专业的食材识别专家。请识别这张冰箱照片中的所有食材。
+要求：
+1. 逐一列出冰箱中所有可见的食材（包括冷藏室和冷冻室）
+2. 标注食材分类（蔬菜/肉类/水产/调料/豆制品/主食/水果/速冻食品/其他）
+3. 如果食材有包装，尝试识别品牌和具体名称
+4. 给出置信度（0-1之间）
+
+严格按以下 JSON 格式返回，不要返回其他内容：
+{"items": [{"name": "食材名", "category": "蔬菜/肉类/水产/调料/豆制品/主食/水果/速冻食品/其他", "confidence": 0.95}]}`,
     };
 
     const prompt = prompts[type] || prompts.ingredient;
