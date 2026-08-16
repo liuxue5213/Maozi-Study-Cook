@@ -1,0 +1,283 @@
+// 麦子学厨 - 数据库 Schema
+// 数据源: MySQL 8.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户相关 ====================
+
+model User {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid()) @db.VarChar(36)
+  username    String   @unique @db.VarChar(50)
+  email       String?  @unique @db.VarChar(100)
+  phone       String?  @unique @db.VarChar(20)
+  password    String   @db.VarChar(255)
+  nickname    String?  @db.VarChar(50)
+  avatar      String?  @db.VarChar(500)
+  bio         String?  @db.VarChar(500)
+  gender      Int      @default(0) // 0未知 1男 2女
+  birthday    DateTime? @db.Date
+  status      Int      @default(1) // 0禁用 1正常
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  preferences     UserPreference?
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
+  favorites       Favorite[]
+  checkIns        CheckIn[]
+  recognitionLogs AiRecognitionLog[]
+  following       UserFollows[] @relation("follower")
+  followers       UserFollows[] @relation("following")
+  createdRecipes  Recipe[]      @relation("recipeCreator")
+
+  @@map("users")
+}
+
+model UserPreference {
+  id                  Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dietGoal            String?  @db.VarChar(50)
+  tastePreferences    Json?
+  allergies           Json?
+  dislikedIngredients Json?
+  updatedAt           DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+model UserFollows {
+  id          Int      @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("user_follows")
+}
+
+// ==================== 菜系相关 ====================
+
+model Cuisine {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(50)
+  nameEn          String?  @db.VarChar(50)
+  slug            String   @unique @db.VarChar(50)
+  description     String?  @db.Text
+  history         String?  @db.Text
+  characteristics String?  @db.Text
+  famousDishes    String?  @db.VarChar(500) // JSON 数组
+  imageUrl        String?  @db.VarChar(500)
+  sortOrder       Int      @default(0)
+  recipeCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  recipes Recipe[]
+
+  @@map("cuisines")
+}
+
+// ==================== 菜谱相关 ====================
+
+model Recipe {
+  id            Int      @id @default(autoincrement())
+  title         String   @db.VarChar(100)
+  description   String?  @db.Text
+  cuisineId     Int?
+  cuisine       Cuisine? @relation(fields: [cuisineId], references: [id], onDelete: SetNull)
+  coverImage    String?  @db.VarChar(500)
+  difficulty    Int      @default(1) // 1-5
+  prepTime      Int?     // 准备时间（分钟）
+  cookTime      Int?     // 烹饪时间（分钟）
+  servings      Int      @default(2)
+  tips          String?  @db.Text
+  viewCount     Int      @default(0)
+  likeCount     Int      @default(0)
+  favoriteCount Int      @default(0)
+  status        Int      @default(1) // 0草稿 1发布
+  createdBy     Int?
+  creator       User?    @relation("recipeCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+  steps       RecipeStep[]
+  posts       Post[]
+  favorites   Favorite[]
+  checkIns    CheckIn[]
+
+  @@index([cuisineId, status])
+  @@index([difficulty, status])
+  @@index([createdAt])
+  @@map("recipes")
+}
+
+model Ingredient {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(50)
+  category        String?  @db.VarChar(30)
+  imageUrl        String?  @db.VarChar(500)
+  description     String?  @db.VarChar(500)
+  nutritionInfo   Json?
+  createdAt       DateTime @default(now())
+
+  recipes RecipeIngredient[]
+
+  @@map("ingredients")
+}
+
+model RecipeIngredient {
+  id             Int     @id @default(autoincrement())
+  recipeId       Int
+  recipe         Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientId   Int?
+  ingredient     Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
+  name           String  @db.VarChar(50)
+  amount         String? @db.VarChar(50)
+  isMain         Boolean @default(false)
+  sortOrder      Int     @default(0)
+
+  @@index([ingredientId])
+  @@map("recipe_ingredients")
+}
+
+model RecipeStep {
+  id          Int      @id @default(autoincrement())
+  recipeId    Int
+  recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  stepNumber  Int
+  description String   @db.Text
+  imageUrl    String?  @db.VarChar(500)
+  duration    Int?     // 该步骤耗时（分钟）
+  tips        String?  @db.VarChar(500)
+
+  @@index([recipeId])
+  @@map("recipe_steps")
+}
+
+// ==================== 社区相关 ====================
+
+model Post {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId     Int?
+  recipe       Recipe?  @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  content      String   @db.Text
+  type         Int      @default(1) // 1作品 2提问 3分享
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  isCheckin    Boolean  @default(false)
+  status       Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  images    PostImage[]
+  comments  Comment[]
+  likes     Like[]
+  checkIns  CheckIn[]
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("posts")
+}
+
+model PostImage {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  imageUrl  String   @db.VarChar(500)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("post_images")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  Int?
+  content   String   @db.Text
+  likeCount Int      @default(0)
+  status    Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+model Like {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String   @db.VarChar(20) // post / recipe / comment
+  targetId   Int
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+  @@map("likes")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, recipeId])
+  @@map("favorites")
+}
+
+// ==================== 打卡相关 ====================
+
+model CheckIn {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId    Int?
+  recipe      Recipe?  @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  postId      Int?
+  post        Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  imageUrl    String?  @db.VarChar(500)
+  note        String?  @db.VarChar(500)
+  checkinDate DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, checkinDate])
+  @@index([userId, checkinDate])
+  @@map("check_ins")
+}
+
+// ==================== AI 相关 ====================
+
+model AiRecognitionLog {
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  imageUrl      String?  @db.VarChar(500)
+  recognizedItems Json?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@map("ai_recognition_logs")
+}

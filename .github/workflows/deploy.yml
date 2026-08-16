@@ -1,0 +1,84 @@
+# ============================================
+# 麦子学厨 - 自动部署工作流
+# 触发条件: push 到 main 分支（CI 通过后）
+# ============================================
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  # ==================== 部署到服务器 ====================
+  deploy:
+    name: 部署到服务器
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # ==================== 部署后端 ====================
+      - name: 部署后端到服务器
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 开始部署后端..."
+
+            cd /var/www/Maozi-Study-Cook/backend
+
+            # 拉取最新代码
+            git pull origin main
+
+            # 安装依赖
+            npm ci
+
+            # 数据库迁移
+            npx prisma migrate deploy
+
+            # 构建
+            npm run build
+
+            # 重启 PM2 进程
+            pm2 restart maozi-api --update-env || pm2 start dist/main.js --name maozi-api
+
+            echo "✅ 后端部署完成"
+
+      # ==================== 部署前端 ====================
+      - name: 部署前端 Web
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 开始部署前端..."
+
+            cd /var/www/Maozi-Study-Cook/frontend
+
+            # 拉取最新代码
+            git pull origin main
+
+            # 安装依赖
+            npm ci
+
+            # 构建 Web 版本
+            npx expo export:web
+
+            # 复制到 Nginx 目录
+            sudo cp -r dist/* /var/www/html/
+
+            # 重载 Nginx
+            sudo nginx -t && sudo systemctl reload nginx
+
+            echo "✅ 前端部署完成"
+
+      # ==================== 部署通知 ====================
+      - name: 部署成功通知
+        if: success()
+        run: echo "🎉 麦子学厨部署成功！"

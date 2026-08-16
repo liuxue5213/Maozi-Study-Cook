@@ -1,0 +1,23 @@
+# 后端忽略规则
+node_modules/
+dist/
+.env
+.env.local
+.env.production
+
+# 上传文件（保留目录）
+uploads/*
+!uploads/.gitkeep
+
+# 日志
+*.log
+
+# Prisma
+prisma/migrations/dev.db*
+
+# 测试
+coverage/
+test/
+
+# 系统文件
+.DS_Store

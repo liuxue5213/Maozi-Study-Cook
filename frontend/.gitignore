@@ -1,0 +1,25 @@
+# 前端忽略规则
+node_modules/
+.expo/
+dist/
+web-build/
+.env
+.env.local
+
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+
+# Metro
+.metro-health-checks*
+
+# Expo
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/

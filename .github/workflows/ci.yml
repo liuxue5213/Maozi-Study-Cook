@@ -1,0 +1,69 @@
+# ============================================
+# 麦子学厨 - CI 工作流
+# 触发条件: push / pull_request 到 main 分支
+# ============================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ==================== 后端检查 ====================
+  backend-check:
+    name: 后端 Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 安装依赖
+        working-directory: ./backend
+        run: npm ci
+
+      - name: 代码检查
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: 构建测试
+        working-directory: ./backend
+        run: npm run build
+
+  # ==================== 前端检查 ====================
+  frontend-check:
+    name: 前端 Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装依赖
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 代码检查
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Web 构建测试
+        working-directory: ./frontend
+        run: npm run build:web
