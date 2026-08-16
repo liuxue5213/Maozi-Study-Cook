@@ -192,7 +192,6 @@ model Post {
 
   images    PostImage[]
   comments  Comment[]
-  likes     Like[]
   checkIns  CheckIn[]
 
   @@index([userId, createdAt])

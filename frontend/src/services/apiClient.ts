@@ -8,12 +8,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
-    // Web 端：使用相对路径（通过 Nginx 代理）
+    if (__DEV__) {
+      // Web 开发模式：直连本地后端（CORS 已放开）
+      return 'http://localhost:3000/api';
+    }
+    // Web 生产：使用相对路径（通过 Nginx 代理）
     return '/api';
   }
   // 真机/模拟器：使用局域网地址或生产地址
   return __DEV__
-    ? 'http://120.48.13.152:3000/api'
+    ? 'http://localhost:3000/api'
     : 'https://your-domain.com/api';
 };
 

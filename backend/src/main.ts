@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { TransformInterceptor } from './modules/common/interceptors/transform.interceptor';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -10,17 +11,14 @@ async function bootstrap() {
   // 安全中间件
   app.use(helmet());
 
+  // 全局响应包装（统一 {code, message, data, timestamp} 格式）
+  app.useGlobalInterceptors(new TransformInterceptor());
+
   // CORS 配置
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-  });
-
-  // API 版本控制
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
   });
 
   // 全局前缀

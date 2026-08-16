@@ -2,24 +2,51 @@ import { Injectable, UnauthorizedException, ConflictException, BadRequestExcepti
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, Matches, MinLength, MaxLength } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
 // DTOs
 export class RegisterDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(50)
   username: string;
+
+  @IsOptional()
+  @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @Matches(/^1\d{10}$/, { message: '手机号格式不正确' })
   phone?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  @MaxLength(64)
   password: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
   nickname?: string;
 }
 
 export class LoginDto {
+  @IsString()
+  @IsNotEmpty()
   account: string; // 用户名/邮箱/手机号
+
+  @IsString()
+  @IsNotEmpty()
   password: string;
 }
 
 export class RefreshTokenDto {
+  @IsString()
+  @IsNotEmpty()
   refreshToken: string;
 }
 
@@ -60,11 +87,13 @@ export class AuthService {
     // 检查用户名唯一性
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { username },
-          email ? { email } : undefined,
-          phone ? { phone } : undefined,
-        ].filter(Boolean),
+        OR: (
+          [
+            { username },
+            email ? { email } : null,
+            phone ? { phone } : null,
+          ] as const
+        ).filter((c): c is Exclude<typeof c, null> => c !== null),
       },
     });
 

@@ -78,6 +78,7 @@ export class CommunityService {
         id: true,
         content: true,
         type: true,
+        status: true,
         likeCount: true,
         commentCount: true,
         isCheckin: true,
