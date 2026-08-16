@@ -36,4 +36,8 @@ module.exports = {
     },
   },
   plugins: [],
+  // 禁用 aspect-ratio 工具类（react-native-css-interop 解析 Bug）
+  corePlugins: {
+    aspectRatio: false,
+  },
 };
