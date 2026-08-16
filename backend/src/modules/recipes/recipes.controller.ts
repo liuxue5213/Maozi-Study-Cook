@@ -71,6 +71,14 @@ export class RecipesController {
     return this.recipesService.toggleFavorite(userId, +id);
   }
 
+  @Post(':id/cook')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '记录制作次数（做过这道菜）' })
+  async incrementCookCount(@Param('id') id: number) {
+    return this.recipesService.incrementCookCount(+id);
+  }
+
   @Post(':id/like')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -106,6 +106,7 @@ model Recipe {
   servings      Int      @default(2)
   tips          String?  @db.Text
   viewCount     Int      @default(0)
+  cookCount     Int      @default(0) // 制作次数（用户做过这道菜的次数）
   likeCount     Int      @default(0)
   favoriteCount Int      @default(0)
   status        Int      @default(1) // 0草稿 1发布

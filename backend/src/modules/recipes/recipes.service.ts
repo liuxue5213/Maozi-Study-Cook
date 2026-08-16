@@ -106,7 +106,7 @@ export class RecipesService {
     }
 
     // 排序
-    let orderBy: any = { viewCount: 'desc' };
+    let orderBy: any = [{ viewCount: 'desc' }, { cookCount: 'desc' }, { likeCount: 'desc' }];
     switch (sortBy) {
       case 'new':
         orderBy = { createdAt: 'desc' };
@@ -116,7 +116,7 @@ export class RecipesService {
         break;
       case 'hot':
       default:
-        orderBy = { viewCount: 'desc' };
+        orderBy = [{ viewCount: 'desc' }, { cookCount: 'desc' }, { likeCount: 'desc' }];
         break;
     }
 
@@ -220,8 +220,21 @@ export class RecipesService {
   }
 
   /**
-   * 按食材搜索菜谱
+   * 增加制作次数（用户做过这道菜）
    */
+  async incrementCookCount(recipeId: number) {
+    const recipe = await this.prisma.recipe.findUnique({
+      where: { id: recipeId },
+    });
+    if (!recipe) {
+      throw new NotFoundException('菜谱不存在');
+    }
+    await this.prisma.recipe.update({
+      where: { id: recipeId },
+      data: { cookCount: { increment: 1 } },
+    });
+    return { cookCount: recipe.cookCount + 1 };
+  }
   async findByIngredients(ingredients: string[]) {
     const recipes = await this.prisma.recipe.findMany({
       where: {

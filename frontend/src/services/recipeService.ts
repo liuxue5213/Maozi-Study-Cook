@@ -45,6 +45,12 @@ export const recipeService = {
   toggleLike: (id: number) => apiClient.post(`/recipes/${id}/like`),
 
   /**
+   * 记录制作次数（做过这道菜）
+   */
+  incrementCookCount: (id: number) =>
+    apiClient.post(`/recipes/${id}/cook`),
+
+  /**
    * 创建菜谱
    */
   create: (data: any) => apiClient.post('/recipes', data),

@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ export default function RecipeDetailScreen() {
   const { isAuthenticated } = useAuthStore();
   const [recipe, setRecipe] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCookModal, setShowCookModal] = useState(false);
 
   useEffect(() => {
     loadRecipe();
@@ -58,6 +60,20 @@ export default function RecipeDetailScreen() {
       setRecipe({ ...recipe, isLiked: res.data.isLiked });
     } catch (error) {
       console.error('点赞失败:', error);
+    }
+  };
+
+  const handleCook = async () => {
+    if (!isAuthenticated) {
+      router.push('/(auth)/login');
+      return;
+    }
+    try {
+      const res = await recipeService.incrementCookCount(Number(id));
+      setRecipe({ ...recipe, cookCount: res.data.cookCount });
+      setShowCookModal(false);
+    } catch (error) {
+      console.error('记录制作失败:', error);
     }
   };
 
@@ -122,6 +138,7 @@ export default function RecipeDetailScreen() {
           {/* 统计 */}
           <View className="flex-row mt-4 text-sm text-cooking-muted">
             <Text>👁 {recipe.viewCount || 0} 次浏览</Text>
+            <Text className="ml-4">🍳 {recipe.cookCount || 0} 人做过</Text>
             <Text className="ml-4">❤️ {recipe.likeCount || 0} 点赞</Text>
             <Text className="ml-4">⭐ {recipe.favoriteCount || 0} 收藏</Text>
           </View>
@@ -215,9 +232,106 @@ export default function RecipeDetailScreen() {
           <Text className="text-cooking-muted text-sm ml-1">收藏</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity className="ml-auto bg-cooking-main px-6 py-2 rounded-full">
+        <TouchableOpacity
+          className="ml-auto bg-cooking-main px-6 py-2 rounded-full"
+          onPress={() => setShowCookModal(true)}
+        >
           <Text className="text-white font-medium">去做这道菜</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* 做菜功能弹窗 */}
+      <Modal
+        visible={showCookModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCookModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-3xl p-6">
+            <View className="flex-row items-center justify-between mb-6">
+              <Text className="text-xl font-bold text-cooking-text">
+                🍳 开始做「{recipe.title}」
+              </Text>
+              <TouchableOpacity onPress={() => setShowCookModal(false)}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* 功能列表 */}
+            <Text className="text-base font-semibold text-cooking-text mb-4">
+              做菜助手功能：
+            </Text>
+
+            <View className="space-y-3 mb-6">
+              <CookFeatureItem
+                icon="list-outline"
+                title="分步烹饪指引"
+                desc="跟着步骤一步步做，不易出错"
+              />
+              <CookFeatureItem
+                icon="timer-outline"
+                title="厨房计时器"
+                desc="每步自动提醒，把握最佳火候"
+              />
+              <CookFeatureItem
+                icon="checkmark-circle-outline"
+                title="食材核对清单"
+                desc="勾选已准备的食材，不漏买"
+              />
+              <CookFeatureItem
+                icon="volume-high-outline"
+                title="语音播报"
+                desc="步骤语音播报，边听边做不脏手"
+              />
+              <CookFeatureItem
+                icon="camera-outline"
+                title="拍照打卡"
+                desc="做完拍照记录，分享到交流圈"
+              />
+              <CookFeatureItem
+                icon="restaurant-outline"
+                title="营养分析"
+                desc="查看菜品热量和营养成分"
+              />
+            </View>
+
+            <TouchableOpacity
+              className="bg-cooking-main py-4 rounded-2xl items-center"
+              onPress={handleCook}
+            >
+              <Text className="text-white text-lg font-semibold">
+                开始制作 🔥
+              </Text>
+            </TouchableOpacity>
+
+            <Text className="text-center text-cooking-muted text-xs mt-3">
+              点击「开始制作」记录你的做菜成果
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function CookFeatureItem({
+  icon,
+  title,
+  desc,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <View className="flex-row items-center bg-gray-50 rounded-xl p-3">
+      <View className="w-10 h-10 bg-cooking-main/10 rounded-full items-center justify-center">
+        <Ionicons name={icon as any} size={20} color="#f97316" />
+      </View>
+      <View className="ml-3 flex-1">
+        <Text className="text-cooking-text font-medium">{title}</Text>
+        <Text className="text-cooking-muted text-xs mt-0.5">{desc}</Text>
       </View>
     </View>
   );

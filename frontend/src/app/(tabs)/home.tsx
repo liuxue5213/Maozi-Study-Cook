@@ -124,7 +124,7 @@ export default function HomeScreen() {
                 {recipe.cuisine?.name || ''} · 难度{recipe.difficulty}⭐
               </Text>
               <Text className="text-cooking-muted text-xs mt-1">
-                ⏱ {recipe.cookTime || 30}分钟 · 👁 {recipe.viewCount || 0}次浏览
+                ⏱ {recipe.cookTime || 30}分钟 · 👁 {recipe.viewCount || 0}次浏览 · 🍳 {recipe.cookCount || 0}人做过
               </Text>
             </View>
           </TouchableOpacity>
