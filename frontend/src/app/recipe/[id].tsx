@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +14,7 @@ import { recipeService } from '../../services/recipeService';
 import { useAuthStore } from '../../stores/authStore';
 
 /**
- * 菜谱详情页
+ * 菜谱详情页 — 完整教程模式
  */
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +22,8 @@ export default function RecipeDetailScreen() {
   const [recipe, setRecipe] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCookModal, setShowCookModal] = useState(false);
+  const [servings, setServings] = useState(2);
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     loadRecipe();
@@ -30,6 +33,7 @@ export default function RecipeDetailScreen() {
     try {
       const res = await recipeService.getDetail(Number(id));
       setRecipe(res.data);
+      setServings(res.data.servings || 2);
     } catch (error) {
       console.error('加载菜谱失败:', error);
     } finally {
@@ -72,9 +76,22 @@ export default function RecipeDetailScreen() {
       const res = await recipeService.incrementCookCount(Number(id));
       setRecipe({ ...recipe, cookCount: res.data.cookCount });
       setShowCookModal(false);
+      Alert.alert('🎉 恭喜！', '已记录你的做菜成果，继续加油！');
     } catch (error) {
       console.error('记录制作失败:', error);
     }
+  };
+
+  const toggleIngredient = (idx: number) => {
+    setCheckedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -98,7 +115,14 @@ export default function RecipeDetailScreen() {
       <ScrollView className="flex-1">
         {/* 封面 */}
         <View className="w-full h-56 bg-gray-100 items-center justify-center">
-          <Text className="text-6xl">🍲</Text>
+          {recipe.coverImage ? (
+            <View className="w-full h-full bg-orange-100 items-center justify-center">
+              <Ionicons name="image-outline" size={48} color="#f97316" />
+              <Text className="text-cooking-main text-xs mt-2">菜品预览图</Text>
+            </View>
+          ) : (
+            <Text className="text-6xl">🍲</Text>
+          )}
         </View>
 
         {/* 基本信息 */}
@@ -133,6 +157,13 @@ export default function RecipeDetailScreen() {
                 </Text>
               </View>
             )}
+            {recipe.prepTime && (
+              <View className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2">
+                <Text className="text-cooking-text text-xs">
+                  🔪 备餐{recipe.prepTime}分钟
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* 统计 */}
@@ -144,34 +175,88 @@ export default function RecipeDetailScreen() {
           </View>
         </View>
 
-        {/* 食材清单 */}
+        {/* 食材清单（可勾选） */}
         <View className="bg-white mt-2 px-4 py-5">
-          <Text className="text-lg font-bold text-cooking-text mb-3">
-            🥬 所需食材
-          </Text>
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-lg font-bold text-cooking-text">
+              🥬 所需食材
+            </Text>
+            <View className="flex-row items-center">
+              <Text className="text-cooking-muted text-sm mr-2">
+                {checkedIngredients.size}/{recipe.ingredients?.length || 0}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  setCheckedIngredients(
+                    checkedIngredients.size === recipe.ingredients?.length
+                      ? new Set()
+                      : new Set(recipe.ingredients?.map((_: any, i: number) => i) || [])
+                  )
+                }
+              >
+                <Text className="text-cooking-main text-sm">
+                  {checkedIngredients.size === recipe.ingredients?.length
+                    ? '取消全选'
+                    : '全选'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <View className="flex-row flex-wrap">
             {recipe.ingredients?.map((ing: any, idx: number) => (
-              <View
+              <TouchableOpacity
                 key={idx}
                 className={`w-[48%] p-3 rounded-lg mb-2 mr-[4%] ${
-                  ing.isMain ? 'bg-orange-50' : 'bg-gray-50'
+                  checkedIngredients.has(idx)
+                    ? 'bg-green-50 border border-green-200'
+                    : ing.isMain
+                    ? 'bg-orange-50'
+                    : 'bg-gray-50'
                 }`}
+                onPress={() => toggleIngredient(idx)}
               >
-                <Text className="text-cooking-text font-medium">{ing.name}</Text>
-                <Text className="text-cooking-muted text-sm">{ing.amount}</Text>
-              </View>
+                <View className="flex-row items-center">
+                  <Ionicons
+                    name={
+                      checkedIngredients.has(idx)
+                        ? 'checkmark-circle'
+                        : 'ellipse-outline'
+                    }
+                    size={16}
+                    color={checkedIngredients.has(idx) ? '#22c55e' : '#d1d5db'}
+                  />
+                  <Text
+                    className={`ml-2 font-medium ${
+                      checkedIngredients.has(idx)
+                        ? 'text-green-600 line-through'
+                        : 'text-cooking-text'
+                    }`}
+                  >
+                    {ing.name}
+                  </Text>
+                </View>
+                <Text
+                  className={`text-sm mt-1 ${
+                    checkedIngredients.has(idx)
+                      ? 'text-green-500'
+                      : 'text-cooking-muted'
+                  }`}
+                >
+                  {ing.amount}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* 烹饪步骤 */}
+        {/* 烹饪步骤（详细版） */}
         <View className="bg-white mt-2 px-4 py-5">
-          <Text className="text-lg font-bold text-cooking-text mb-3">
+          <Text className="text-lg font-bold text-cooking-text mb-4">
             👨‍🍳 烹饪步骤
           </Text>
           {recipe.steps?.map((step: any, idx: number) => (
-            <View key={idx} className="flex-row mb-4">
-              <View className="w-8 h-8 bg-cooking-main rounded-full items-center justify-center">
+            <View key={idx} className="flex-row mb-5">
+              <View className="w-9 h-9 bg-cooking-main rounded-full items-center justify-center">
                 <Text className="text-white font-bold text-sm">
                   {step.stepNumber}
                 </Text>
@@ -181,14 +266,20 @@ export default function RecipeDetailScreen() {
                   {step.description}
                 </Text>
                 {step.duration && (
-                  <Text className="text-cooking-muted text-xs mt-1">
-                    ⏱ 约 {step.duration} 分钟
-                  </Text>
+                  <View className="flex-row items-center mt-2">
+                    <Ionicons name="time-outline" size={14} color="#f97316" />
+                    <Text className="text-cooking-main text-xs ml-1">
+                      约 {step.duration} 分钟
+                    </Text>
+                  </View>
                 )}
                 {step.tips && (
-                  <Text className="text-cooking-main text-xs mt-1">
-                    💡 {step.tips}
-                  </Text>
+                  <View className="bg-yellow-50 rounded-lg px-3 py-2 mt-2 flex-row items-start">
+                    <Text className="text-yellow-600 text-xs mr-1">💡</Text>
+                    <Text className="text-yellow-700 text-xs flex-1 leading-4">
+                      {step.tips}
+                    </Text>
+                  </View>
                 )}
               </View>
             </View>
@@ -197,13 +288,29 @@ export default function RecipeDetailScreen() {
 
         {/* 小贴士 */}
         {recipe.tips && (
-          <View className="bg-white mt-2 px-4 py-5 mb-4">
+          <View className="bg-white mt-2 px-4 py-5">
             <Text className="text-lg font-bold text-cooking-text mb-2">
-              💡 小贴士
+              💡 大厨小贴士
             </Text>
             <Text className="text-cooking-muted leading-5">{recipe.tips}</Text>
           </View>
         )}
+
+        {/* 营养信息（估算） */}
+        <View className="bg-white mt-2 px-4 py-5 mb-4">
+          <Text className="text-lg font-bold text-cooking-text mb-3">
+            🥗 营养信息（估算）
+          </Text>
+          <View className="flex-row justify-around">
+            <NutritionItem label="热量" value="~350" unit="kcal" />
+            <NutritionItem label="蛋白质" value="~25" unit="g" />
+            <NutritionItem label="脂肪" value="~15" unit="g" />
+            <NutritionItem label="碳水" value="~30" unit="g" />
+          </View>
+          <Text className="text-cooking-muted text-xs mt-3 text-center">
+            * 以上为估算值，实际因食材用量和烹饪方式而异
+          </Text>
+        </View>
       </ScrollView>
 
       {/* 底部操作栏 */}
@@ -333,6 +440,26 @@ function CookFeatureItem({
         <Text className="text-cooking-text font-medium">{title}</Text>
         <Text className="text-cooking-muted text-xs mt-0.5">{desc}</Text>
       </View>
+    </View>
+  );
+}
+
+function NutritionItem({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+}) {
+  return (
+    <View className="items-center">
+      <Text className="text-lg font-bold text-cooking-text">{value}</Text>
+      <Text className="text-cooking-muted text-xs">
+        {unit}
+      </Text>
+      <Text className="text-cooking-muted text-xs mt-1">{label}</Text>
     </View>
   );
 }

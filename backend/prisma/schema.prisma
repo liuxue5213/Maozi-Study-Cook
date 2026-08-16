@@ -109,6 +109,11 @@ model Recipe {
   cookCount     Int      @default(0) // 制作次数（用户做过这道菜的次数）
   likeCount     Int      @default(0)
   favoriteCount Int      @default(0)
+  calories      Int?     @default(0) // 每份热量(千卡)
+  protein       Float?   @default(0) // 蛋白质(g)
+  fat           Float?   @default(0) // 脂肪(g)
+  carbs         Float?   @default(0) // 碳水化合物(g)
+  videoUrl      String?  @default("") // 视频教程链接
   status        Int      @default(1) // 0草稿 1发布
   createdBy     Int?
   creator       User?    @relation("recipeCreator", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -166,7 +171,7 @@ model RecipeStep {
   recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   stepNumber  Int
   description String   @db.Text
-  imageUrl    String?  @db.VarChar(500)
+  imageUrl    String?  @default("") // 步骤图片
   duration    Int?     // 该步骤耗时（分钟）
   tips        String?  @db.VarChar(500)
 
