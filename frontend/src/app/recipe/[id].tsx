@@ -594,7 +594,7 @@ function IngredientRow({
               {amount}
             </Text>
             {amount === '适量' && (
-              <Text className="text-orange-400 text-xs ml-0.5" title="根据个人口味适量添加">
+              <Text className="text-orange-400 text-xs ml-0.5">
                 ≈
               </Text>
             )}
