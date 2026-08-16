@@ -589,9 +589,16 @@ function IngredientRow({
             <Text className="text-xs text-gray-400 line-through">{original}</Text>
           </View>
         ) : (
-          <Text className={`text-sm ${checked ? 'text-green-500' : 'text-cooking-muted'}`}>
-            {amount}
-          </Text>
+          <View className="flex-row items-center">
+            <Text className={`text-sm ${checked ? 'text-green-500' : 'text-cooking-muted'}`}>
+              {amount}
+            </Text>
+            {amount === '适量' && (
+              <Text className="text-orange-400 text-xs ml-0.5" title="根据个人口味适量添加">
+                ≈
+              </Text>
+            )}
+          </View>
         )}
       </View>
     </TouchableOpacity>
