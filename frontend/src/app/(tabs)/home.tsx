@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { recipeService } from '../../services/recipeService';
 import { cuisineService } from '../../services/cuisineService';
+import { getImageUrl } from '../../utils/imageUtils';
 
 /**
  * 首页 - 推荐内容、热门菜谱、菜系入口
@@ -119,7 +120,7 @@ export default function HomeScreen() {
           >
             {recipe.coverImage ? (
               <Image
-                source={{ uri: recipe.coverImage }}
+                source={{ uri: getImageUrl(recipe.coverImage) ?? '' }}
                 className="w-20 h-20 rounded-lg"
                 resizeMode="cover"
               />

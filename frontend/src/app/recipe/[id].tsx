@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { recipeService } from '../../services/recipeService';
 import { aiService } from '../../services/aiService';
 import { useAuthStore } from '../../stores/authStore';
+import { getImageUrl } from '../../utils/imageUtils';
 import InteractiveCookingMode from '../../components/InteractiveCookingMode';
 
 /**
@@ -228,17 +229,19 @@ export default function RecipeDetailScreen() {
     <View className="flex-1 bg-cooking-background">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         {/* 封面 */}
-        {recipe.coverImage ? (
-          <Image
-            source={{ uri: recipe.coverImage }}
-            className="w-full h-56"
-            resizeMode="cover"
-          />
-        ) : (
-          <View className="w-full h-56 bg-gray-100 items-center justify-center">
-            <Text className="text-6xl">🍲</Text>
-          </View>
-        )}
+        <View className="w-full bg-gray-100" style={{ aspectRatio: 16 / 9 }}>
+          {recipe.coverImage ? (
+            <Image
+              source={{ uri: getImageUrl(recipe.coverImage) ?? '' }}
+              className="w-full h-full"
+              resizeMode="cover"
+            />
+          ) : (
+            <View className="w-full h-full items-center justify-center">
+              <Text className="text-6xl">🍲</Text>
+            </View>
+          )}
+        </View>
 
         {/* 基本信息 */}
         <View className="bg-white px-4 py-5">
