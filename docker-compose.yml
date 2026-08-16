@@ -1,4 +1,4 @@
-# 麦子学厨 - Docker Compose 编排配置
+# 帽子学做饭 - Docker Compose 编排配置
 # 注意：当前服务器未安装 Docker，此配置预留用于后续迁移
 # 部署命令: docker-compose up -d
 

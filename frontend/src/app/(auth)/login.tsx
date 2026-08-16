@@ -48,7 +48,7 @@ export default function LoginScreen() {
         {/* Logo */}
         <View className="items-center mb-10">
           <Text className="text-5xl mb-2">🥟</Text>
-          <Text className="text-2xl font-bold text-cooking-text">麦子学厨</Text>
+          <Text className="text-2xl font-bold text-cooking-text">帽子学做饭</Text>
           <Text className="text-cooking-muted mt-1">登录开始你的烹饪之旅</Text>
         </View>
 

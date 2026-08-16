@@ -1,4 +1,4 @@
-# 麦子学厨 - 前端
+# 帽子学做饭 - 前端
 
 基于 React Native + Expo 的跨平台前端，支持 Android、iOS、Web 三端。
 

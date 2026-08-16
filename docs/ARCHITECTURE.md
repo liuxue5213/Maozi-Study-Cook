@@ -2,7 +2,7 @@
 
 ## 1. 系统架构概述
 
-麦子学厨采用**前后端分离**的架构模式，前端使用 React Native + Expo 实现跨平台（Android/iOS/Web），后端使用 NestJS 提供 API 服务。
+帽子学做饭采用**前后端分离**的架构模式，前端使用 React Native + Expo 实现跨平台（Android/iOS/Web），后端使用 NestJS 提供 API 服务。
 
 ## 2. 架构分层
 

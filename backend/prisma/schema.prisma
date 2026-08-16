@@ -1,4 +1,4 @@
-// 麦子学厨 - 数据库 Schema
+// 帽子学做饭 - 数据库 Schema
 // 数据源: MySQL 8.0
 
 generator client {

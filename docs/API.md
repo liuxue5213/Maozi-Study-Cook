@@ -66,7 +66,7 @@ POST /api/auth/register
   "email": "user@example.com",
   "phone": "13800138000",
   "password": "Aa123456",
-  "nickname": "麦子"
+  "nickname": "帽子"
 }
 ```
 
@@ -152,7 +152,7 @@ Authorization: Bearer <token>
 **请求体：**
 ```json
 {
-  "nickname": "麦子",
+  "nickname": "帽子",
   "avatar": "https://...",
   "bio": "热爱烹饪的程序员",
   "gender": 1,

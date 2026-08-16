@@ -36,7 +36,7 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: '首页',
-          headerTitle: '麦子学厨',
+          headerTitle: '帽子学做饭',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),

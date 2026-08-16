@@ -71,7 +71,7 @@ export default function RegisterScreen() {
         <View className="items-center mb-8">
           <Text className="text-4xl mb-2">🥟</Text>
           <Text className="text-xl font-bold text-cooking-text">创建账号</Text>
-          <Text className="text-cooking-muted mt-1">加入麦子学厨大家庭</Text>
+          <Text className="text-cooking-muted mt-1">加入帽子学做饭大家庭</Text>
         </View>
 
         <View className="space-y-4">

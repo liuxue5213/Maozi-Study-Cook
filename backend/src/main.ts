@@ -38,8 +38,8 @@ async function bootstrap() {
 
   // Swagger 文档
   const config = new DocumentBuilder()
-    .setTitle('麦子学厨 API')
-    .setDescription('麦子学厨 - 一站式烹饪学习社交平台接口文档')
+    .setTitle('帽子学做饭 API')
+    .setDescription('帽子学做饭 - 一站式烹饪学习社交平台接口文档')
     .setVersion('1.0.0')
     .addBearerAuth()
     .addTag('auth', '认证模块')
@@ -58,7 +58,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  console.log(`\n🚀 麦子学厨后端服务已启动`);
+  console.log(`🚀 帽子学做饭后端服务已启动`);
   console.log(`📍 服务地址: http://localhost:${port}`);
   console.log(`📚 API 文档: http://localhost:${port}/api/docs`);
   console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}\n`);
