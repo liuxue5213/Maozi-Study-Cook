@@ -97,6 +97,12 @@ jobs:
             set -e
             echo "🚀 开始部署..."
 
+            # 首次运行：克隆仓库
+            if [ ! -d "/var/www/Maozi-Study-Cook" ]; then
+              echo "📥 克隆仓库..."
+              git clone https://github.com/liuxue5213/Maozi-Study-Cook.git /var/www/Maozi-Study-Cook
+            fi
+
             cd /var/www/Maozi-Study-Cook
 
             # 拉取最新代码
