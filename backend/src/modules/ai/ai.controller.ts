@@ -66,6 +66,22 @@ export class AiController {
     return this.aiService.recommendRecipes(ingredients, preferences);
   }
 
+  @Post('estimate-weight')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'AI 估算食材重量（克）' })
+  async estimateWeight(
+    @Body('image') imageBase64: string,
+    @Body('ingredientName') ingredientName: string = '食材',
+    @CurrentUser('id') userId: number = 0,
+  ) {
+    if (!imageBase64) {
+      throw new BadRequestException('请提供图片数据');
+    }
+    const base64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    return this.aiService.estimateWeight(base64, ingredientName);
+  }
+
   @Post('generate-steps')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

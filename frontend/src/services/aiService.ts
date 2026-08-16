@@ -16,6 +16,15 @@ export const aiService = {
     }),
 
   /**
+   * AI 估算食材重量（克）
+   */
+  estimateWeight: (base64Image: string, ingredientName: string) =>
+    apiClient.post('/ai/estimate-weight', {
+      image: base64Image,
+      ingredientName,
+    }),
+
+  /**
    * 根据食材推荐菜谱
    */
   recommend: (ingredients: string[], preferences?: any) =>

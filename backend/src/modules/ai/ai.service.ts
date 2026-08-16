@@ -261,6 +261,68 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
   }
 
   /**
+   * AI 估算食材重量（克）
+   * @param imageBase64 图片 base64
+   * @param ingredientName 食材名称
+   */
+  async estimateWeight(imageBase64: string, ingredientName: string) {
+    if (!this.apiKey) {
+      throw new BadRequestException('AI 服务未配置，请在 .env 中设置 AI_API_KEY');
+    }
+
+    const prompt = `这是"${ingredientName}"的照片。请根据照片中食材的体积、密度和常见大小，估算其总重量（克）。
+参考密度：叶菜约100-300g/份、根茎类约200-500g/份、肉类约200-500g/份、豆腐约300-500g/块。
+严格按以下 JSON 格式返回，不要返回其他内容：
+{"weight": 350, "confidence": 0.8}`;
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<any>(
+          `${this.baseUrl}/services/aigc/multimodal-generation/generation`,
+          {
+            model: this.visionModel,
+            input: {
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    { image: `data:image/jpeg;base64,${imageBase64}` },
+                    { text: prompt },
+                  ],
+                },
+              ],
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
+          },
+        ),
+      );
+
+      const output = response.data?.output?.choices?.[0]?.message?.content;
+      const result = this.extractAiResult(output);
+      const weight = Number(result?.weight);
+
+      if (!weight || weight <= 0 || weight > 10000) {
+        throw new BadRequestException('AI 未能估算出有效重量，请手动输入');
+      }
+
+      return {
+        weight: Math.round(weight),
+        confidence: result?.confidence ?? null,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      console.error('AI 重量估算失败:', error.response?.data || error.message);
+      throw new BadRequestException('AI 重量估算失败，请手动输入');
+    }
+  }
+
+  /**
    * 生成菜谱步骤
    */
   async generateSteps(title: string, ingredients: string[], difficulty: number) {

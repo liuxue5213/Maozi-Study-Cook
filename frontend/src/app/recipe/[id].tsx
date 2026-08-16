@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,24 +9,46 @@ import {
   Alert,
   Platform,
   Image,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { recipeService } from '../../services/recipeService';
+import { aiService } from '../../services/aiService';
 import { useAuthStore } from '../../stores/authStore';
+import InteractiveCookingMode from '../../components/InteractiveCookingMode';
 
 /**
- * 菜谱详情页 — 完整教程模式
+ * 菜谱详情页 — 专业教程模式
+ *
+ * 核心功能：
+ * 1. 食材表格 + 份量计算器（按人数自动换算配料/调料重量）
+ * 2. 烹饪模式（全屏分步导航 + 计时器 + 进度条）
  */
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAuthenticated } = useAuthStore();
   const [recipe, setRecipe] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCookModal, setShowCookModal] = useState(false);
+
+  // 份量计算器状态
   const [servings, setServings] = useState(2);
+  const [baseServings, setBaseServings] = useState(2);
+
+  // 换算模式: 'servings' 按人数 | 'weight' 按主料重量
+  const [calcMode, setCalcMode] = useState<'servings' | 'weight'>('servings');
+  // 用户输入的主料实际重量（克），基准是第一个主料的基准克数
+  const [customWeight, setCustomWeight] = useState('');
+  // AI 识别中
+  const [isAiWeightLoading, setIsAiWeightLoading] = useState(false);
+
+  // 食材勾选
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+
+  // 烹饪模式状态
+  const [showCookingMode, setShowCookingMode] = useState(false);
 
   useEffect(() => {
     loadRecipe();
@@ -36,6 +58,7 @@ export default function RecipeDetailScreen() {
     try {
       const res = await recipeService.getDetail(Number(id));
       setRecipe(res.data);
+      setBaseServings(res.data.servings || 2);
       setServings(res.data.servings || 2);
     } catch (error) {
       console.error('加载菜谱失败:', error);
@@ -70,7 +93,7 @@ export default function RecipeDetailScreen() {
     }
   };
 
-  const handleCook = async () => {
+  const handleCookComplete = async () => {
     if (!isAuthenticated) {
       router.push('/(auth)/login');
       return;
@@ -78,11 +101,16 @@ export default function RecipeDetailScreen() {
     try {
       const res = await recipeService.incrementCookCount(Number(id));
       setRecipe({ ...recipe, cookCount: res.data.cookCount });
-      setShowCookModal(false);
-      Alert.alert('🎉 恭喜！', '已记录你的做菜成果，继续加油！');
+      setShowCookingMode(false);
+      Alert.alert('🎉 恭喜完成！', '已记录你的做菜成果，继续加油！');
     } catch (error) {
       console.error('记录制作失败:', error);
     }
+  };
+
+  const adjustServings = (delta: number) => {
+    const newServings = Math.max(1, Math.min(20, servings + delta));
+    setServings(newServings);
   };
 
   const toggleIngredient = (idx: number) => {
@@ -95,6 +123,86 @@ export default function RecipeDetailScreen() {
       }
       return next;
     });
+  };
+
+  /**
+   * 从用量字符串中解析出数值（克）
+   * "400g" → 400, "2大勺" → null（勺无法精确换算）
+   */
+  const parseGrams = (amount: string): number | null => {
+    const m = amount?.match(/^([\d.]+)\s*(g|克|克重)$/i);
+    return m ? parseFloat(m[1]) : null;
+  };
+
+  // 第一个主料的基准克数（作为重量模式的锚点）
+  const mainIngredients = recipe?.ingredients?.filter((i: any) => i.isMain) || [];
+  const anchor = mainIngredients[0];
+  const anchorGrams = anchor ? parseGrams(anchor.amount) : null;
+
+  /**
+   * 当前换算比例
+   * - servings 模式: servings / baseServings
+   * - weight 模式: customWeight / anchorGrams（基于第一个主料）
+   */
+  const getRatio = (): number => {
+    if (calcMode === 'weight' && anchorGrams && customWeight) {
+      const w = parseFloat(customWeight);
+      if (w > 0) return w / anchorGrams;
+      return 1;
+    }
+    return servings / baseServings;
+  };
+
+  /**
+   * 计算食材用量（统一按 getRatio 换算）
+   */
+  const scaleAmount = (amount: string): string => {
+    if (!amount || amount === '适量' || amount === '少许') {
+      return amount;
+    }
+    const ratio = getRatio();
+    if (ratio === 1) return amount;
+
+    const match = amount.match(/^([\d.]+)\s*(.*)$/);
+    if (!match) return amount;
+
+    const num = parseFloat(match[1]);
+    const unit = match[2] || '';
+    const scaled = num * ratio;
+    const rounded = scaled >= 10 ? Math.round(scaled) : Math.round(scaled * 10) / 10;
+
+    return `${rounded}${unit}`;
+  };
+
+  /**
+   * AI 拍照识别主料重量
+   */
+  const handleAiWeight = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+      base64: true,
+    });
+    if (result.canceled || !result.assets?.[0]?.base64) return;
+
+    setIsAiWeightLoading(true);
+    try {
+      const res = await aiService.estimateWeight(
+        result.assets[0].base64,
+        anchor?.name || '食材',
+      );
+      const weight = res.data?.weight;
+      if (weight) {
+        setCustomWeight(String(weight));
+      } else {
+        Alert.alert('提示', 'AI 未能识别重量，请手动输入');
+      }
+    } catch (error: any) {
+      Alert.alert('识别失败', error.message || '请手动输入克数');
+    } finally {
+      setIsAiWeightLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -113,16 +221,18 @@ export default function RecipeDetailScreen() {
     );
   }
 
+  const subIngredients = recipe.ingredients?.filter((i: any) => !i.isMain) || [];
+
+
   return (
     <View className="flex-1 bg-cooking-background">
-      <ScrollView className="flex-1">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         {/* 封面 */}
         {recipe.coverImage ? (
           <Image
             source={{ uri: recipe.coverImage }}
             className="w-full h-56"
             resizeMode="cover"
-            defaultSource={require('../../assets/icon.png')}
           />
         ) : (
           <View className="w-full h-56 bg-gray-100 items-center justify-center">
@@ -141,149 +251,239 @@ export default function RecipeDetailScreen() {
             </Text>
           )}
 
-          {/* 标签信息 */}
+          {/* 标签 */}
           <View className="flex-row flex-wrap mt-4">
             {recipe.cuisine && (
               <View className="bg-cooking-main/10 px-3 py-1 rounded-full mr-2 mb-2">
-                <Text className="text-cooking-main text-xs">
-                  {recipe.cuisine.name}
-                </Text>
+                <Text className="text-cooking-main text-xs">{recipe.cuisine.name}</Text>
               </View>
             )}
             <View className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2">
-              <Text className="text-cooking-text text-xs">
-                难度{recipe.difficulty}⭐
-              </Text>
+              <Text className="text-cooking-text text-xs">难度{recipe.difficulty}⭐</Text>
             </View>
             {recipe.cookTime && (
               <View className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2">
-                <Text className="text-cooking-text text-xs">
-                  ⏱ {recipe.cookTime}分钟
-                </Text>
-              </View>
-            )}
-            {recipe.prepTime && (
-              <View className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2">
-                <Text className="text-cooking-text text-xs">
-                  🔪 备餐{recipe.prepTime}分钟
-                </Text>
+                <Text className="text-cooking-text text-xs">⏱ {recipe.cookTime}分钟</Text>
               </View>
             )}
           </View>
 
           {/* 统计 */}
-          <View className="flex-row mt-4 text-sm text-cooking-muted">
-            <Text>👁 {recipe.viewCount || 0} 次浏览</Text>
-            <Text className="ml-4">🍳 {recipe.cookCount || 0} 人做过</Text>
-            <Text className="ml-4">❤️ {recipe.likeCount || 0} 点赞</Text>
-            <Text className="ml-4">⭐ {recipe.favoriteCount || 0} 收藏</Text>
+          <View className="flex-row mt-3">
+            <Text className="text-cooking-muted text-xs">👁 {recipe.viewCount || 0}浏览</Text>
+            <Text className="text-cooking-muted text-xs ml-3">🍳 {recipe.cookCount || 0}人做过</Text>
+            <Text className="text-cooking-muted text-xs ml-3">❤️ {recipe.likeCount || 0}赞</Text>
           </View>
         </View>
 
-        {/* 食材清单（可勾选） */}
+        {/* ===== 份量计算器（三种模式） ===== */}
         <View className="bg-white mt-2 px-4 py-5">
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-lg font-bold text-cooking-text">
-              🥬 所需食材
-            </Text>
-            <View className="flex-row items-center">
-              <Text className="text-cooking-muted text-sm mr-2">
-                {checkedIngredients.size}/{recipe.ingredients?.length || 0}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  setCheckedIngredients(
-                    checkedIngredients.size === recipe.ingredients?.length
-                      ? new Set()
-                      : new Set(recipe.ingredients?.map((_: any, i: number) => i) || [])
-                  )
-                }
-              >
-                <Text className="text-cooking-main text-sm">
-                  {checkedIngredients.size === recipe.ingredients?.length
-                    ? '取消全选'
-                    : '全选'}
+            <Text className="text-lg font-bold text-cooking-text">👨‍🍳 份量计算</Text>
+            {getRatio() !== 1 && (
+              <View className="bg-cooking-main/10 px-3 py-1 rounded-full">
+                <Text className="text-cooking-main text-xs font-medium">
+                  ×{getRatio().toFixed(2)} 倍用量
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            )}
           </View>
-          <View className="flex-row flex-wrap">
-            {recipe.ingredients?.map((ing: any, idx: number) => (
-              <TouchableOpacity
-                key={idx}
-                className={`w-[48%] p-3 rounded-lg mb-2 mr-[4%] ${
-                  checkedIngredients.has(idx)
-                    ? 'bg-green-50 border border-green-200'
-                    : ing.isMain
-                    ? 'bg-orange-50'
-                    : 'bg-gray-50'
+
+          {/* 模式切换 Tab */}
+          <View className="flex-row bg-gray-100 rounded-xl p-1 mb-4">
+            <TouchableOpacity
+              className={`flex-1 py-2 rounded-lg ${
+                calcMode === 'servings' ? 'bg-white shadow-sm' : ''
+              }`}
+              onPress={() => setCalcMode('servings')}
+            >
+              <Text
+                className={`text-center text-sm font-medium ${
+                  calcMode === 'servings' ? 'text-cooking-text' : 'text-cooking-muted'
                 }`}
-                onPress={() => toggleIngredient(idx)}
               >
-                <View className="flex-row items-center">
-                  <Ionicons
-                    name={
-                      checkedIngredients.has(idx)
-                        ? 'checkmark-circle'
-                        : 'ellipse-outline'
-                    }
-                    size={16}
-                    color={checkedIngredients.has(idx) ? '#22c55e' : '#d1d5db'}
-                  />
-                  <Text
-                    className={`ml-2 font-medium ${
-                      checkedIngredients.has(idx)
-                        ? 'text-green-600 line-through'
-                        : 'text-cooking-text'
-                    }`}
-                  >
-                    {ing.name}
-                  </Text>
-                </View>
-                <Text
-                  className={`text-sm mt-1 ${
-                    checkedIngredients.has(idx)
-                      ? 'text-green-500'
-                      : 'text-cooking-muted'
-                  }`}
-                >
-                  {ing.amount}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                👥 按人数
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-1 py-2 rounded-lg ${
+                calcMode === 'weight' ? 'bg-white shadow-sm' : ''
+              }`}
+              onPress={() => setCalcMode('weight')}
+            >
+              <Text
+                className={`text-center text-sm font-medium ${
+                  calcMode === 'weight' ? 'text-cooking-text' : 'text-cooking-muted'
+                }`}
+              >
+                ⚖️ 按主料重量
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* 按人数模式 */}
+          {calcMode === 'servings' && (
+            <View>
+              <View className="flex-row items-center justify-center bg-orange-50 rounded-2xl py-4">
+                <TouchableOpacity
+                  className="w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm"
+                  onPress={() => adjustServings(-1)}
+                >
+                  <Ionicons name="remove" size={24} color="#f97316" />
+                </TouchableOpacity>
+                <View className="mx-6 items-center">
+                  <Text className="text-3xl font-bold text-cooking-text">{servings}</Text>
+                  <Text className="text-cooking-muted text-xs mt-1">人份</Text>
+                </View>
+                <TouchableOpacity
+                  className="w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm"
+                  onPress={() => adjustServings(1)}
+                >
+                  <Ionicons name="add" size={24} color="#f97316" />
+                </TouchableOpacity>
+              </View>
+              <Text className="text-cooking-muted text-xs text-center mt-2">
+                调整人数，食材用量自动换算（基准：{baseServings}人份）
+              </Text>
+            </View>
+          )}
+
+          {/* 按主料重量模式 */}
+          {calcMode === 'weight' && (
+            <View>
+              {anchorGrams ? (
+                <View>
+                  <Text className="text-cooking-muted text-sm mb-2">
+                    输入手头「{anchor.name}」的实际重量（菜谱基准：{anchorGrams}g）
+                  </Text>
+                  <View className="flex-row items-center bg-orange-50 rounded-2xl px-4">
+                    <TextInput
+                      className="flex-1 text-2xl font-bold text-cooking-text py-4"
+                      value={customWeight}
+                      onChangeText={(t) => setCustomWeight(t.replace(/[^\d.]/g, ''))}
+                      placeholder={`${anchorGrams}`}
+                      placeholderTextColor="#d1d5db"
+                      keyboardType="numeric"
+                      maxLength={5}
+                    />
+                    <Text className="text-xl font-bold text-cooking-muted">g</Text>
+                    <TouchableOpacity
+                      className="ml-3 bg-white rounded-full w-11 h-11 items-center justify-center shadow-sm"
+                      onPress={handleAiWeight}
+                      disabled={isAiWeightLoading}
+                    >
+                      {isAiWeightLoading ? (
+                        <ActivityIndicator size="small" color="#f97316" />
+                      ) : (
+                        <Ionicons name="camera" size={22} color="#f97316" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  <Text className="text-cooking-muted text-xs text-center mt-2">
+                    📷 点相机图标拍照，AI 自动估算重量（需配置 AI_API_KEY）
+                  </Text>
+                  {customWeight && parseFloat(customWeight) > 0 && (
+                    <Text className="text-cooking-main text-xs text-center mt-1 font-medium">
+                      其他食材和调料将按 {getRatio().toFixed(2)} 倍自动换算
+                    </Text>
+                  )}
+                </View>
+              ) : (
+                <Text className="text-cooking-muted text-sm text-center py-4">
+                  该菜谱主料未标明克数，暂不支持按重量换算
+                </Text>
+              )}
+            </View>
+          )}
         </View>
 
-        {/* 烹饪步骤（详细版） */}
+        {/* ===== 食材表格 ===== */}
         <View className="bg-white mt-2 px-4 py-5">
-          <Text className="text-lg font-bold text-cooking-text mb-4">
-            👨‍🍳 烹饪步骤
-          </Text>
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-lg font-bold text-cooking-text">🥬 所需食材</Text>
+            <TouchableOpacity
+              onPress={() =>
+                setCheckedIngredients(
+                  checkedIngredients.size === recipe.ingredients?.length
+                    ? new Set()
+                    : new Set(recipe.ingredients?.map((_: any, i: number) => i) || [])
+                )
+              }
+            >
+              <Text className="text-cooking-main text-sm">
+                {checkedIngredients.size === recipe.ingredients?.length ? '取消全选' : '全选'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 主料表格 */}
+          {mainIngredients.length > 0 && (
+            <View className="mb-4">
+              <View className="flex-row bg-gray-100 rounded-t-lg px-3 py-2">
+                <Text className="flex-1 text-xs font-bold text-cooking-muted">主料</Text>
+                <Text className="w-24 text-xs font-bold text-cooking-muted text-right">用量</Text>
+              </View>
+              {mainIngredients.map((ing: any, idx: number) => {
+                const globalIdx = recipe.ingredients.indexOf(ing);
+                return (
+                  <IngredientRow
+                    key={idx}
+                    name={ing.name}
+                    amount={scaleAmount(ing.amount)}
+                    original={ing.amount}
+                    checked={checkedIngredients.has(globalIdx)}
+                    onToggle={() => toggleIngredient(globalIdx)}
+                    isLast={idx === mainIngredients.length - 1}
+                  />
+                );
+              })}
+            </View>
+          )}
+
+          {/* 配料/调料表格 */}
+          {subIngredients.length > 0 && (
+            <View>
+              <View className="flex-row bg-gray-100 rounded-t-lg px-3 py-2">
+                <Text className="flex-1 text-xs font-bold text-cooking-muted">配料/调料</Text>
+                <Text className="w-24 text-xs font-bold text-cooking-muted text-right">用量</Text>
+              </View>
+              {subIngredients.map((ing: any, idx: number) => {
+                const globalIdx = recipe.ingredients.indexOf(ing);
+                return (
+                  <IngredientRow
+                    key={idx}
+                    name={ing.name}
+                    amount={scaleAmount(ing.amount)}
+                    original={ing.amount}
+                    checked={checkedIngredients.has(globalIdx)}
+                    onToggle={() => toggleIngredient(globalIdx)}
+                    isLast={idx === subIngredients.length - 1}
+                  />
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {/* ===== 烹饪步骤 ===== */}
+        <View className="bg-white mt-2 px-4 py-5">
+          <Text className="text-lg font-bold text-cooking-text mb-4">👨‍🍳 烹饪步骤</Text>
           {recipe.steps?.map((step: any, idx: number) => (
             <View key={idx} className="flex-row mb-5">
               <View className="w-9 h-9 bg-cooking-main rounded-full items-center justify-center">
-                <Text className="text-white font-bold text-sm">
-                  {step.stepNumber}
-                </Text>
+                <Text className="text-white font-bold text-sm">{step.stepNumber}</Text>
               </View>
               <View className="flex-1 ml-3">
-                <Text className="text-cooking-text leading-5">
-                  {step.description}
-                </Text>
+                <Text className="text-cooking-text leading-5">{step.description}</Text>
                 {step.duration && (
                   <View className="flex-row items-center mt-2">
                     <Ionicons name="time-outline" size={14} color="#f97316" />
-                    <Text className="text-cooking-main text-xs ml-1">
-                      约 {step.duration} 分钟
-                    </Text>
+                    <Text className="text-cooking-main text-xs ml-1">约 {step.duration} 分钟</Text>
                   </View>
                 )}
                 {step.tips && (
-                  <View className="bg-yellow-50 rounded-lg px-3 py-2 mt-2 flex-row items-start">
-                    <Text className="text-yellow-600 text-xs mr-1">💡</Text>
-                    <Text className="text-yellow-700 text-xs flex-1 leading-4">
-                      {step.tips}
-                    </Text>
+                  <View className="bg-yellow-50 rounded-lg px-3 py-2 mt-2">
+                    <Text className="text-yellow-700 text-xs leading-4">💡 {step.tips}</Text>
                   </View>
                 )}
               </View>
@@ -294,155 +494,94 @@ export default function RecipeDetailScreen() {
         {/* 小贴士 */}
         {recipe.tips && (
           <View className="bg-white mt-2 px-4 py-5">
-            <Text className="text-lg font-bold text-cooking-text mb-2">
-              💡 大厨小贴士
-            </Text>
+            <Text className="text-lg font-bold text-cooking-text mb-2">💡 大厨小贴士</Text>
             <Text className="text-cooking-muted leading-5">{recipe.tips}</Text>
           </View>
         )}
-
-        {/* 营养信息（估算） */}
-        <View className="bg-white mt-2 px-4 py-5 mb-4">
-          <Text className="text-lg font-bold text-cooking-text mb-3">
-            🥗 营养信息（估算）
-          </Text>
-          <View className="flex-row justify-around">
-            <NutritionItem label="热量" value="~350" unit="kcal" />
-            <NutritionItem label="蛋白质" value="~25" unit="g" />
-            <NutritionItem label="脂肪" value="~15" unit="g" />
-            <NutritionItem label="碳水" value="~30" unit="g" />
-          </View>
-          <Text className="text-cooking-muted text-xs mt-3 text-center">
-            * 以上为估算值，实际因食材用量和烹饪方式而异
-          </Text>
-        </View>
       </ScrollView>
 
-      {/* 底部操作栏（安全区适配，避免与虚拟按键重叠） */}
+      {/* 底部操作栏 */}
       <BottomActionBar
         recipe={recipe}
         onLike={handleLike}
         onFavorite={handleFavorite}
-        onCook={() => setShowCookModal(true)}
+        onCook={() => setShowCookingMode(true)}
       />
 
-      {/* 做菜功能弹窗 */}
-      <Modal
-        visible={showCookModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCookModal(false)}
+      {/* ===== 交互式做菜模式（全屏沉浸） ===== */}
+      <InteractiveCookingMode
+        visible={showCookingMode}
+        recipe={recipe}
+        servings={servings}
+        baseServings={baseServings}
+        customWeight={customWeight}
+        calcMode={calcMode}
+        onClose={() => setShowCookingMode(false)}
+        onComplete={handleCookComplete}
+      />
+    </View>
+  );
+}
+
+/**
+ * 食材行组件（表格样式）
+ */
+function IngredientRow({
+  name,
+  amount,
+  original,
+  checked,
+  onToggle,
+  isLast,
+}: {
+  name: string;
+  amount: string;
+  original: string;
+  checked: boolean;
+  onToggle: () => void;
+  isLast: boolean;
+}) {
+  const isScaled = amount !== original;
+  return (
+    <TouchableOpacity
+      className={`flex-row items-center px-3 py-3 ${
+        !isLast ? 'border-b border-gray-100' : 'border-b border-gray-200'
+      } ${checked ? 'bg-green-50' : 'bg-white'}`}
+      onPress={onToggle}
+    >
+      <Ionicons
+        name={checked ? 'checkmark-circle' : 'ellipse-outline'}
+        size={18}
+        color={checked ? '#22c55e' : '#d1d5db'}
+      />
+      <Text
+        className={`flex-1 ml-2 text-sm ${
+          checked ? 'text-green-600 line-through' : 'text-cooking-text'
+        }`}
       >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-3xl p-6">
-            <View className="flex-row items-center justify-between mb-6">
-              <Text className="text-xl font-bold text-cooking-text">
-                🍳 开始做「{recipe.title}」
-              </Text>
-              <TouchableOpacity onPress={() => setShowCookModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* 功能列表 */}
-            <Text className="text-base font-semibold text-cooking-text mb-4">
-              做菜助手功能：
-            </Text>
-
-            <View className="space-y-3 mb-6">
-              <CookFeatureItem
-                icon="list-outline"
-                title="分步烹饪指引"
-                desc="跟着步骤一步步做，不易出错"
-              />
-              <CookFeatureItem
-                icon="timer-outline"
-                title="厨房计时器"
-                desc="每步自动提醒，把握最佳火候"
-              />
-              <CookFeatureItem
-                icon="checkmark-circle-outline"
-                title="食材核对清单"
-                desc="勾选已准备的食材，不漏买"
-              />
-              <CookFeatureItem
-                icon="volume-high-outline"
-                title="语音播报"
-                desc="步骤语音播报，边听边做不脏手"
-              />
-              <CookFeatureItem
-                icon="camera-outline"
-                title="拍照打卡"
-                desc="做完拍照记录，分享到交流圈"
-              />
-              <CookFeatureItem
-                icon="restaurant-outline"
-                title="营养分析"
-                desc="查看菜品热量和营养成分"
-              />
-            </View>
-
-            <TouchableOpacity
-              className="bg-cooking-main py-4 rounded-2xl items-center"
-              onPress={handleCook}
-            >
-              <Text className="text-white text-lg font-semibold">
-                开始制作 🔥
-              </Text>
-            </TouchableOpacity>
-
-            <Text className="text-center text-cooking-muted text-xs mt-3">
-              点击「开始制作」记录你的做菜成果
-            </Text>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
-
-function CookFeatureItem({
-  icon,
-  title,
-  desc,
-}: {
-  icon: string;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <View className="flex-row items-center bg-gray-50 rounded-xl p-3">
-      <View className="w-10 h-10 bg-cooking-main/10 rounded-full items-center justify-center">
-        <Ionicons name={icon as any} size={20} color="#f97316" />
-      </View>
-      <View className="ml-3 flex-1">
-        <Text className="text-cooking-text font-medium">{title}</Text>
-        <Text className="text-cooking-muted text-xs mt-0.5">{desc}</Text>
-      </View>
-    </View>
-  );
-}
-
-function NutritionItem({
-  label,
-  value,
-  unit,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-}) {
-  return (
-    <View className="items-center">
-      <Text className="text-lg font-bold text-cooking-text">{value}</Text>
-      <Text className="text-cooking-muted text-xs">
-        {unit}
+        {name}
       </Text>
-      <Text className="text-cooking-muted text-xs mt-1">{label}</Text>
-    </View>
+      <View className="w-24 items-end">
+        {isScaled ? (
+          <View>
+            <Text className={`text-sm font-bold ${checked ? 'text-green-500' : 'text-cooking-main'}`}>
+              {amount}
+            </Text>
+            <Text className="text-xs text-gray-400 line-through">{original}</Text>
+          </View>
+        ) : (
+          <Text className={`text-sm ${checked ? 'text-green-500' : 'text-cooking-muted'}`}>
+            {amount}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 }
 
+/**
+ * 底部操作栏
+ */
 function BottomActionBar({
   recipe,
   onLike,
@@ -462,10 +601,7 @@ function BottomActionBar({
       style={{ paddingBottom: bottomPad }}
       className="bg-white border-t border-gray-100 px-4 pt-3 flex-row items-center"
     >
-      <TouchableOpacity
-        className="flex-row items-center mr-6"
-        onPress={onLike}
-      >
+      <TouchableOpacity className="flex-row items-center mr-6" onPress={onLike}>
         <Ionicons
           name={recipe.isLiked ? 'heart' : 'heart-outline'}
           size={22}
@@ -474,10 +610,7 @@ function BottomActionBar({
         <Text className="text-cooking-muted text-sm ml-1">点赞</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        className="flex-row items-center"
-        onPress={onFavorite}
-      >
+      <TouchableOpacity className="flex-row items-center" onPress={onFavorite}>
         <Ionicons
           name={recipe.isFavorited ? 'star' : 'star-outline'}
           size={22}
@@ -487,11 +620,12 @@ function BottomActionBar({
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="ml-auto bg-cooking-main px-6 py-2 rounded-full"
+        className="ml-auto bg-cooking-main px-6 py-3 rounded-full"
         onPress={onCook}
       >
-        <Text className="text-white font-medium">去做这道菜</Text>
+        <Text className="text-white font-semibold">🍳 开始做菜</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
