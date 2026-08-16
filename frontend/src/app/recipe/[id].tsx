@@ -229,7 +229,7 @@ export default function RecipeDetailScreen() {
     <View className="flex-1 bg-cooking-background">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         {/* 封面 */}
-        <View className="w-full bg-gray-100" style={{ aspectRatio: 16 / 9 }}>
+        <View className="w-full h-56 bg-gray-100">
           {recipe.coverImage ? (
             <Image
               source={{ uri: getImageUrl(recipe.coverImage) ?? '' }}
