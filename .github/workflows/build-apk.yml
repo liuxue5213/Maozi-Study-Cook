@@ -1,0 +1,70 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build-apk:
+    name: 构建 Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 安装 Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+
+      - name: 安装前端依赖
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 生成 Android 项目 (Prebuild)
+        working-directory: ./frontend
+        run: npx expo prebuild -p android --no-install
+
+      - name: 构建 APK (Release)
+        working-directory: ./frontend/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: 重命名 APK
+        run: |
+          cd frontend/android/app/build/outputs/apk/release
+          mv app-release-unsigned.apk maozi-study-cook.apk
+
+      - name: 上传 APK 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: maozi-study-cook-apk
+          path: frontend/android/app/build/outputs/apk/release/maozi-study-cook.apk
+          retention-days: 30
+
+      # 可选：创建 GitHub Release 并上传 APK
+      - name: 创建 Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: 帽子学做饭 v${{ github.run_number }}
+          files: frontend/android/app/build/outputs/apk/release/maozi-study-cook.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
