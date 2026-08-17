@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { recipeService } from '../../services/recipeService';
 import { cuisineService } from '../../services/cuisineService';
-import { getImageUrl } from '../../utils/imageUtils';
+import { getThumbUrl } from '../../utils/imageUtils';
 
 /**
  * 首页 - 推荐内容、热门菜谱、菜系入口
@@ -77,12 +77,12 @@ export default function HomeScreen() {
           <QuickAction
             icon="search"
             label="搜索菜谱"
-            onPress={() => router.push('/(tabs)/cuisines')}
+            onPress={() => router.push('/search')}
           />
           <QuickAction
             icon="calendar"
             label="今日打卡"
-            onPress={() => router.push('/(tabs)/community')}
+            onPress={() => router.push('/checkin')}
           />
         </View>
       </View>
@@ -124,7 +124,7 @@ export default function HomeScreen() {
           >
             {recipe.coverImage ? (
               <Image
-                source={{ uri: getImageUrl(recipe.coverImage) ?? '' }}
+                source={{ uri: getThumbUrl(recipe) ?? '' }}
                 style={styles.recipeImage}
                 resizeMode="cover"
               />

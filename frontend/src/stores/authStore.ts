@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient } from '../services/apiClient';
 import { authService } from '../services/authService';
 
 interface User {
@@ -11,6 +12,13 @@ interface User {
   nickname?: string;
   avatar?: string;
   bio?: string;
+  // GET /users/me 附带的统计
+  _count?: {
+    posts?: number;
+    favorites?: number;
+    checkIns?: number;
+    followers?: number;
+  };
 }
 
 interface AuthState {
@@ -26,6 +34,7 @@ interface AuthState {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
+  refreshUser: () => Promise<any>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -147,5 +156,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     authService.setAuthToken(accessToken);
 
     set({ accessToken, refreshToken });
+  },
+
+  /**
+   * 重新拉取当前用户信息（含作品/收藏/打卡/粉丝统计）
+   * 个人中心、修改资料保存后调用，保证 store 不停留在登录时的快照
+   */
+  refreshUser: async () => {
+    const res = await apiClient.get('/users/me');
+    const user = res.data;
+    await AsyncStorage.setItem('user', JSON.stringify(user));
+    set({ user });
+    return user;
   },
 }));

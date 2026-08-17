@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,16 @@ import { useAuthStore } from '../../stores/authStore';
  * 个人中心页面
  */
 export default function ProfileScreen() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, refreshUser } = useAuthStore();
   // 两次点击确认退出（不依赖系统弹窗，Web/内嵌浏览器中 Alert 回调不可用）
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+
+  // 每次进入页面拉取最新用户信息（含作品/收藏/打卡/粉丝统计）
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshUser().catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   const handleLogout = async () => {
     if (!confirmingLogout) {
@@ -73,10 +80,10 @@ export default function ProfileScreen() {
 
         {/* 数据统计 */}
         <View style={styles.statRow}>
-          <StatItem label="作品" value="0" />
-          <StatItem label="收藏" value="0" />
-          <StatItem label="连续打卡" value="0天" />
-          <StatItem label="粉丝" value="0" />
+          <StatItem label="作品" value={String(user?._count?.posts ?? 0)} />
+          <StatItem label="收藏" value={String(user?._count?.favorites ?? 0)} />
+          <StatItem label="打卡" value={String(user?._count?.checkIns ?? 0)} />
+          <StatItem label="粉丝" value={String(user?._count?.followers ?? 0)} />
         </View>
       </View>
 

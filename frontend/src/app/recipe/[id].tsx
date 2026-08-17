@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { recipeService } from '../../services/recipeService';
+import { communityService } from '../../services/communityService';
 import { useAuthStore } from '../../stores/authStore';
 import { getImageUrl } from '../../utils/imageUtils';
 import { colors, textStyles, commonStyles } from '../../styles/theme';
@@ -89,7 +90,7 @@ export default function RecipeDetailScreen() {
     }
   };
 
-  // 完成烹饪（记录做过这道菜）
+  // 完成烹饪：记录做菜次数 + 创建打卡（连续打卡/打卡日历依赖这条记录）
   const handleCookComplete = async () => {
     setIsCooking(false);
     try {
@@ -97,6 +98,11 @@ export default function RecipeDetailScreen() {
       setCookCount((c) => c + 1);
     } catch (e) {
       console.error('记录做菜次数失败:', e);
+    }
+    try {
+      await communityService.createCheckIn({ recipeId: Number(id) });
+    } catch (e) {
+      console.error('创建打卡失败:', e);
     }
   };
 

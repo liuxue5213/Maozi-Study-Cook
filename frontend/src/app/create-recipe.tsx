@@ -13,6 +13,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { recipeService } from '../services/recipeService';
+import { cuisineService } from '../services/cuisineService';
+import { aiService } from '../services/aiService';
 import { useAuthStore } from '../stores/authStore';
 
 /**
@@ -31,6 +33,13 @@ export default function CreateRecipeScreen() {
   const [servings, setServings] = useState('2');
   const [tips, setTips] = useState('');
 
+  // 所属菜系（40 个菜系可选）
+  const [cuisines, setCuisines] = useState<any[]>([]);
+  const [cuisineId, setCuisineId] = useState<number | null>(null);
+
+  // AI 生成步骤
+  const [isGeneratingSteps, setIsGeneratingSteps] = useState(false);
+
   // 食材列表（从拍照识别自动填充）
   const [ingredients, setIngredients] = useState<{ name: string; amount: string; isMain: boolean }[]>([]);
 
@@ -38,6 +47,50 @@ export default function CreateRecipeScreen() {
   const [steps, setSteps] = useState([{ description: '', duration: '', tips: '' }]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 加载菜系列表供选择
+  useEffect(() => {
+    cuisineService
+      .getList({ pageSize: 60 })
+      .then((res: any) => setCuisines(res.data?.list || []))
+      .catch(() => {});
+  }, []);
+
+  // AI 生成烹饪步骤（填好菜名和食材后可用）
+  const handleGenerateSteps = async () => {
+    if (!title.trim()) {
+      Alert.alert('提示', '请先输入菜名');
+      return;
+    }
+    const names = ingredients.map((i) => i.name.trim()).filter(Boolean);
+    if (names.length === 0) {
+      Alert.alert('提示', '请先添加食材');
+      return;
+    }
+    setIsGeneratingSteps(true);
+    try {
+      const res: any = await aiService.generateSteps(title.trim(), names, difficulty);
+      const generated = res.data?.steps;
+      if (!generated || generated.length === 0) {
+        Alert.alert('提示', 'AI 没能生成步骤，请手动填写');
+        return;
+      }
+      setSteps(
+        generated.map((s: any) => ({
+          description: s.description || '',
+          duration: s.duration ? String(s.duration) : '',
+          tips: s.tips || '',
+        })),
+      );
+      if (res.data?.tips && !tips.trim()) {
+        setTips(res.data.tips);
+      }
+    } catch (e: any) {
+      Alert.alert('提示', e.message || '生成失败，请稍后重试');
+    } finally {
+      setIsGeneratingSteps(false);
+    }
+  };
 
   // 从拍照识别传入的食材自动填充
   useEffect(() => {
@@ -113,6 +166,7 @@ export default function CreateRecipeScreen() {
       await recipeService.create({
         title: title.trim(),
         description: description.trim(),
+        cuisineId: cuisineId ?? undefined,
         difficulty,
         prepTime: prepTime ? parseInt(prepTime) : undefined,
         cookTime: cookTime ? parseInt(cookTime) : undefined,
@@ -213,6 +267,32 @@ export default function CreateRecipeScreen() {
             </View>
           </View>
 
+          {/* 所属菜系 */}
+          <View style={styles.cuisinePickerWrap}>
+            <Text style={styles.label}>所属菜系（选填）</Text>
+            <View style={styles.cuisineChipWrap}>
+              {cuisines.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[
+                    styles.cuisineChip,
+                    cuisineId === c.id ? styles.cuisineChipActive : null,
+                  ]}
+                  onPress={() => setCuisineId(cuisineId === c.id ? null : c.id)}
+                >
+                  <Text
+                    style={[
+                      styles.cuisineChipText,
+                      cuisineId === c.id ? styles.cuisineChipTextActive : null,
+                    ]}
+                  >
+                    {c.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <View style={styles.row}>
             <View style={styles.halfCol}>
               <Text style={styles.label}>备餐时间(分)</Text>
@@ -305,9 +385,22 @@ export default function CreateRecipeScreen() {
 
         {/* 步骤 */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            👨‍🍳 烹饪步骤
-          </Text>
+          <View style={styles.stepSectionHeader}>
+            <Text style={styles.sectionTitle}>
+              👨‍🍳 烹饪步骤
+            </Text>
+            <TouchableOpacity
+              style={styles.aiStepsBtn}
+              onPress={handleGenerateSteps}
+              disabled={isGeneratingSteps}
+            >
+              {isGeneratingSteps ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.aiStepsBtnText}>✨ AI 生成</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {steps.map((step, idx) => (
             <View key={idx} style={styles.stepItem}>
@@ -611,6 +704,52 @@ const styles = StyleSheet.create({
   submitText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '600',
+  },
+  cuisinePickerWrap: {
+    marginTop: 16,
+  },
+  cuisineChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  cuisineChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  cuisineChipActive: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#f97316',
+  },
+  cuisineChipText: {
+    fontSize: 13,
+    color: '#1f2937',
+  },
+  cuisineChipTextActive: {
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  stepSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  aiStepsBtn: {
+    backgroundColor: '#f97316',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  aiStepsBtnText: {
+    color: '#fff',
+    fontSize: 13,
     fontWeight: '600',
   },
 });

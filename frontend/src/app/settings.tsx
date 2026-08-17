@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { apiClient } from '../services/apiClient';
  * 偏好设置页面
  */
 export default function SettingsScreen() {
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -27,6 +27,21 @@ export default function SettingsScreen() {
 
   const goalOptions = ['认真吃好每一顿', '轻盈减脂', '清淡养生', '高蛋白增肌'];
   const [dietGoal, setDietGoal] = useState(goalOptions[0]);
+
+  // 回显已保存的偏好
+  useEffect(() => {
+    apiClient
+      .get('/users/me/preferences')
+      .then((res: any) => {
+        if (res.data?.tastePreferences?.length) {
+          setSelectedTastes(res.data.tastePreferences);
+        }
+        if (res.data?.dietGoal && goalOptions.includes(res.data.dietGoal)) {
+          setDietGoal(res.data.dietGoal);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleTaste = (taste: string) => {
     setSelectedTastes((prev) =>
@@ -47,6 +62,8 @@ export default function SettingsScreen() {
           tastePreferences: selectedTastes,
         }),
       ]);
+      // 同步刷新全局用户信息（昵称改动会反映到首页问候/个人中心）
+      refreshUser().catch(() => {});
       Alert.alert('提示', '保存成功');
     } catch (e: any) {
       Alert.alert('提示', e.message || '保存失败，请稍后重试');

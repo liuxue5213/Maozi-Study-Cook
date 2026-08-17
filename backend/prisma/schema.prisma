@@ -100,6 +100,7 @@ model Recipe {
   cuisineId     Int?
   cuisine       Cuisine? @relation(fields: [cuisineId], references: [id], onDelete: SetNull)
   coverImage    String?  @db.VarChar(500)
+  coverThumb    String?  @db.VarChar(500) // 列表缩略图（约 400px 宽，供列表快速加载）
   difficulty    Int      @default(1) // 1-5
   prepTime      Int?     // 准备时间（分钟）
   cookTime      Int?     // 烹饪时间（分钟）

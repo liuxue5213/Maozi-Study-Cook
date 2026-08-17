@@ -2,8 +2,9 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
+import sharp from 'sharp';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { matchIngredient } from '../recipes/recipes.service';
 
@@ -384,7 +385,7 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
 
   /**
    * 为指定菜谱生成封面图（服务器端 AI 生图）
-   * @returns 相对路径 /uploads/recipe-covers/xxx.png
+   * @returns 相对路径 /uploads/recipe-covers/xxx.jpg
    */
   async generateRecipeCover(recipeId: number): Promise<string> {
     const recipe = await this.prisma.recipe.findUnique({
@@ -395,7 +396,7 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
       throw new BadRequestException('菜谱不存在');
     }
 
-    const url = await this.generateDishImage(
+    const saved = await this.generateDishImage(
       recipe.title,
       recipe.description || undefined,
       recipe.cuisine?.name,
@@ -403,21 +404,21 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
 
     await this.prisma.recipe.update({
       where: { id: recipeId },
-      data: { coverImage: url },
+      data: { coverImage: saved.coverImage, coverThumb: saved.coverThumb },
     });
 
-    return url;
+    return saved.coverImage;
   }
 
   /**
    * 生成菜品图片（ModelScope Z-Image-Turbo，异步任务 + 轮询）
-   * @returns 保存后的相对路径
+   * @returns 主图 + 缩略图的相对路径
    */
   async generateDishImage(
     title: string,
     description?: string,
     cuisineName?: string,
-  ): Promise<string> {
+  ): Promise<{ coverImage: string; coverThumb: string }> {
     const cuisine = cuisineName || '中餐';
     const desc = (description || '').slice(0, 60);
     const prompt = `Professional food photography of a delicious Chinese dish called "${title}", a traditional ${cuisine} cuisine. ${desc ? `The dish features ${desc}.` : ''} Beautifully plated on a ceramic plate with appetizing colors and textures, soft natural lighting from the side, shallow depth of field, dark rustic wooden table background, garnished with fresh herbs, steaming hot, ultra-realistic, 4K, high detail, food magazine style, no text, no watermark.`;
@@ -463,8 +464,7 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
             throw new Error('empty output_images');
           }
           return await this.saveImage(imageUrl);
-        }
-        if (result.data?.task_status === 'FAILED') {
+        }        if (result.data?.task_status === 'FAILED') {
           throw new Error('generation FAILED');
         }
       }
@@ -476,25 +476,36 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
   }
 
   /**
-   * 下载生成结果并保存到 uploads/recipe-covers/
+   * 下载生成结果并保存（主图 720px JPEG + 列表缩略图 400px JPEG）
    */
-  private async saveImage(imageUrl: string): Promise<string> {
-    const dir = join(this.findBackendRoot(), 'uploads', 'recipe-covers');
-    mkdirSync(dir, { recursive: true });
-
-    const ext = imageUrl.match(/\.(png|jpe?g|webp)/i)?.[1] || 'png';
-    const filename = `recipe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const filepath = join(dir, filename);
-
+  private async saveImage(imageUrl: string): Promise<{ coverImage: string; coverThumb: string }> {
     const res = await firstValueFrom(
       this.httpService.get(imageUrl, {
         responseType: 'arraybuffer',
         timeout: 60000,
       }),
     );
-    writeFileSync(filepath, Buffer.from(res.data as ArrayBuffer));
+    const buf = Buffer.from(res.data as ArrayBuffer);
 
-    return `/uploads/recipe-covers/${filename}`;
+    const fileName = `recipe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const dir = join(this.findBackendRoot(), 'uploads', 'recipe-covers');
+    const thumbDir = join(dir, 'thumbs');
+    mkdirSync(dir, { recursive: true });
+    mkdirSync(thumbDir, { recursive: true });
+
+    await sharp(buf)
+      .resize({ width: 720, withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toFile(join(dir, fileName));
+    await sharp(buf)
+      .resize({ width: 400, withoutEnlargement: true })
+      .jpeg({ quality: 75 })
+      .toFile(join(thumbDir, fileName));
+
+    return {
+      coverImage: `/uploads/recipe-covers/${fileName}`,
+      coverThumb: `/uploads/recipe-covers/thumbs/${fileName}`,
+    };
   }
 
   /**

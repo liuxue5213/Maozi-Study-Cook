@@ -41,6 +41,14 @@ export class UsersController {
     return this.usersService.getMyRecipes(userId);
   }
 
+  @Get('me/preferences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取我的偏好设置' })
+  async getPreferences(@CurrentUser('id') userId: number) {
+    return this.usersService.getPreferences(userId);
+  }
+
   @Put('me/preferences')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
