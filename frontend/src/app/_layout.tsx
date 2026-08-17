@@ -99,6 +99,13 @@ export default function RootLayout() {
             title: '创建菜品',
           }}
         />
+        <Stack.Screen
+          name="create-post"
+          options={{
+            headerShown: true,
+            title: '发布动态',
+          }}
+        />
       </Stack>
     </SafeAreaProvider>
   );

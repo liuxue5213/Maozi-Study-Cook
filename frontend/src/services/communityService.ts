@@ -46,6 +46,27 @@ export const communityService = {
   likePost: (id: number) => apiClient.post(`/community/posts/${id}/like`),
 
   /**
+   * 批量上传图片（帖子配图，最多 9 张，后端返回相对路径数组）
+   */
+  uploadImages: (
+    files: { uri: string; name?: string; type?: string }[],
+    folder = 'post'
+  ) => {
+    const formData = new FormData();
+    files.forEach((file, idx) => {
+      formData.append('files', {
+        uri: file.uri,
+        name: file.name || `post-${Date.now()}-${idx}.jpg`,
+        type: file.type || 'image/jpeg',
+      } as any);
+    });
+    formData.append('folder', folder);
+    return apiClient.post('/upload/images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /**
    * 获取评论列表
    */
   getComments: (postId: number, params?: { page?: number; pageSize?: number }) =>

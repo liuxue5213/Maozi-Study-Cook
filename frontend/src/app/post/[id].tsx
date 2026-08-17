@@ -5,22 +5,25 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image,
+  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { communityService } from '../../services/communityService';
+import { getImageUrl } from '../../utils/imageUtils';
 
 /**
  * 帖子详情页
  */
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
@@ -62,6 +65,47 @@ export default function PostDetailScreen() {
     }
   };
 
+  // 点赞（与列表一致的乐观更新逻辑）
+  const handleLike = async () => {
+    try {
+      const res = await communityService.likePost(post.id);
+      const isLiked = !!res.data?.isLiked;
+      setPost((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              isLiked,
+              likeCount: Math.max(
+                0,
+                (prev.likeCount || 0) + (isLiked ? 1 : -1)
+              ),
+            }
+          : prev
+      );
+    } catch (error) {
+      console.error('点赞失败:', error);
+    }
+  };
+
+  // 删除自己的帖子
+  const handleDelete = () => {
+    Alert.alert('确认删除?', '', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await communityService.deletePost(Number(id));
+            router.back();
+          } catch (error: any) {
+            Alert.alert('删除失败', error.message || '请稍后重试');
+          }
+        },
+      },
+    ]);
+  };
+
   if (isLoading || !post) {
     return (
       <View style={styles.loading}>
@@ -94,18 +138,51 @@ export default function PostDetailScreen() {
 
           <Text style={styles.contentText}>{post.content}</Text>
 
+          {/* 帖子图片（真实渲染，每张全宽大图） */}
           {post.images?.length > 0 && (
-            <View style={styles.imageGrid}>
+            <View style={styles.imageList}>
               {post.images.map((img: any, idx: number) => (
-                <View
+                <Image
                   key={idx}
-                  style={styles.imageCell}
-                >
-                  <Text style={styles.imageEmoji}>🍲</Text>
-                </View>
+                  source={{ uri: getImageUrl(img.imageUrl) }}
+                  style={styles.detailImage}
+                  resizeMode="cover"
+                />
               ))}
             </View>
           )}
+
+          {/* 操作区：点赞 / 删除 */}
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleLike}
+            >
+              <Ionicons
+                name={post.isLiked ? 'heart' : 'heart-outline'}
+                size={22}
+                color={post.isLiked ? '#ef4444' : '#9ca3af'}
+              />
+              <Text
+                style={[
+                  styles.actionText,
+                  post.isLiked ? styles.actionTextLiked : null,
+                ]}
+              >
+                {post.likeCount || 0}
+              </Text>
+            </TouchableOpacity>
+
+            {user && post.userId === user.id && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleDelete}
+              >
+                <Ionicons name="trash-outline" size={22} color="#ef4444" />
+                <Text style={styles.deleteText}>删除</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* 评论列表 */}
@@ -176,6 +253,7 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#fff',
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -213,23 +291,41 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     lineHeight: 20,
   },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  imageList: {
     marginTop: 12,
   },
-  imageCell: {
-    width: '32%',
-    height: 96,
+  detailImage: {
+    width: '100%',
+    aspectRatio: 4 / 3,
     backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    marginRight: '2%',
+    borderRadius: 12,
     marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  imageEmoji: {
-    fontSize: 24,
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f9fafb',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  actionTextLiked: {
+    color: '#ef4444',
+  },
+  deleteText: {
+    color: '#ef4444',
+    fontSize: 14,
+    marginLeft: 6,
   },
   commentsTitle: {
     fontSize: 16,

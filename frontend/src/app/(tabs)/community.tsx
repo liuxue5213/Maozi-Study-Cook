@@ -2,23 +2,25 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  Image,
+  Share,
   StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../stores/authStore';
 import { communityService } from '../../services/communityService';
+import { getImageUrl } from '../../utils/imageUtils';
 
 /**
  * 交流圈页面
  */
 export default function CommunityScreen() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -60,6 +62,24 @@ export default function CommunityScreen() {
     setIsRefreshing(true);
     loadPosts(1, true);
   }, [activeTab]);
+
+  // 点赞后乐观更新列表中对应帖子
+  const handleLikeUpdate = (postId: number, isLiked: boolean) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              isLiked,
+              likeCount: Math.max(
+                0,
+                (p.likeCount || 0) + (isLiked ? 1 : -1)
+              ),
+            }
+          : p
+      )
+    );
+  };
 
   const loadMore = () => {
     if (!isLoading && hasMore) {
@@ -118,7 +138,9 @@ export default function CommunityScreen() {
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.3}
-        renderItem={({ item }: { item: any }) => <PostCard post={item} />}
+        renderItem={({ item }: { item: any }) => (
+          <PostCard post={item} onLike={handleLikeUpdate} />
+        )}
         ListEmptyComponent={
           <View style={styles.emptyComponent}>
             <Text style={styles.emptyText}>暂无动态</Text>
@@ -137,7 +159,7 @@ export default function CommunityScreen() {
       {isAuthenticated && (
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => router.push('/(tabs)/camera')}
+          onPress={() => router.push('/create-post')}
         >
           <Ionicons name="add" size={28} color="white" />
         </TouchableOpacity>
@@ -149,13 +171,28 @@ export default function CommunityScreen() {
 /**
  * 帖子卡片组件
  */
-function PostCard({ post }: { post: any }) {
+function PostCard({
+  post,
+  onLike,
+}: {
+  post: any;
+  onLike?: (postId: number, isLiked: boolean) => void;
+}) {
   const handleLike = async () => {
     try {
-      await communityService.likePost(post.id);
+      const res = await communityService.likePost(post.id);
       // 乐观更新
+      onLike?.(post.id, !!res.data?.isLiked);
     } catch (error) {
       console.error('点赞失败:', error);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({ message: post.content || '' });
+    } catch (error) {
+      console.error('分享失败:', error);
     }
   };
 
@@ -189,33 +226,34 @@ function PostCard({ post }: { post: any }) {
       {/* 内容 */}
       <Text style={styles.postContent}>{post.content}</Text>
 
-      {/* 图片 */}
+      {/* 图片（九宫格，最多 9 张） */}
       {post.images?.length > 0 && (
         <View style={styles.postImages}>
-          {post.images.slice(0, 3).map((img: any, idx: number) => (
-            <View
+          {post.images.slice(0, 9).map((img: any, idx: number) => (
+            <Image
               key={idx}
+              source={{ uri: getImageUrl(img.imageUrl) }}
               style={[
                 styles.postImage,
-                idx === 2 ? styles.postImageLast : null,
+                idx % 3 === 2 ? styles.postImageLast : null,
               ]}
-            >
-              <View style={styles.postImageInner}>
-                <Text style={styles.postImageIcon}>🍲</Text>
-              </View>
-            </View>
+              resizeMode="cover"
+            />
           ))}
         </View>
       )}
 
       {/* 关联菜谱 */}
       {post.recipe && (
-        <View style={styles.postRecipe}>
+        <TouchableOpacity
+          style={styles.postRecipe}
+          onPress={() => router.push(`/recipe/${post.recipe.id}`)}
+        >
           <Text style={styles.postRecipeLabel}>关联菜谱：</Text>
           <Text style={styles.postRecipeTitle}>
             {post.recipe.title}
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* 互动栏 */}
@@ -246,14 +284,7 @@ function PostCard({ post }: { post: any }) {
 
         <TouchableOpacity
           style={styles.postActionButton}
-          onPress={() => {
-            if (navigator.share) {
-              navigator.share({
-                title: `帽子学做饭 - ${post.content?.slice(0, 20)}`,
-                url: window.location.origin,
-              });
-            }
-          }}
+          onPress={handleShare}
         >
           <Ionicons name="share-outline" size={18} color="#9ca3af" />
           <Text style={styles.postActionText}>分享</Text>
@@ -336,6 +367,7 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#ffffff',
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginBottom: 8,
@@ -390,22 +422,14 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '32%',
-    height: 96,
+    aspectRatio: 1,
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
+    marginBottom: 8,
     marginRight: '2%',
   },
   postImageLast: {
     marginRight: 0,
-  },
-  postImageInner: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  postImageIcon: {
-    fontSize: 24,
   },
   postRecipe: {
     backgroundColor: '#f9fafb',
