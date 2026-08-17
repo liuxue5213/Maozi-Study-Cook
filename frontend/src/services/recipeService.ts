@@ -27,6 +27,11 @@ export const recipeService = {
   getDetail: (id: number) => apiClient.get(`/recipes/${id}`),
 
   /**
+   * 服务器 AI 生成菜品封面图
+   */
+  generateCover: (id: number) => apiClient.post(`/ai/recipes/${id}/cover`),
+
+  /**
    * 按食材搜索菜谱
    */
   searchByIngredients: (ingredients: string[]) =>

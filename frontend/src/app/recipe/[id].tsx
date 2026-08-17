@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Image,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,7 @@ import { recipeService } from '../../services/recipeService';
 import { useAuthStore } from '../../stores/authStore';
 import { getImageUrl } from '../../utils/imageUtils';
 import { colors, textStyles, commonStyles } from '../../styles/theme';
+import InteractiveCookingMode from '../../components/InteractiveCookingMode';
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -22,6 +24,12 @@ export default function RecipeDetailScreen() {
   const insets = useSafeAreaInsets();
   const [recipe, setRecipe] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [cookCount, setCookCount] = useState(0);
+  const [isCooking, setIsCooking] = useState(false);
 
   useEffect(() => { loadRecipe(); }, [id]);
 
@@ -29,8 +37,67 @@ export default function RecipeDetailScreen() {
     try {
       const res = await recipeService.getDetail(Number(id));
       setRecipe(res.data);
+      setIsLiked(!!res.data.isLiked);
+      setIsFavorited(!!res.data.isFavorited);
+      setLikeCount(res.data.likeCount || 0);
+      setCookCount(res.data.cookCount || 0);
     } catch (e) { console.error(e); }
     finally { setIsLoading(false); }
+  };
+
+  // 服务器 AI 生成菜品封面图（约 20 秒）
+  const handleGenerateCover = async () => {
+    setIsGenerating(true);
+    try {
+      await recipeService.generateCover(Number(id));
+      await loadRecipe();
+    } catch (e: any) {
+      console.error('生成封面失败:', e);
+      Alert.alert('提示', e.message || '生成失败，请稍后重试');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // 点赞 / 取消点赞
+  const handleLike = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('提示', '请先登录');
+      return;
+    }
+    try {
+      const res = await recipeService.toggleLike(Number(id));
+      setIsLiked(res.data.isLiked);
+      setLikeCount((c) => c + (res.data.isLiked ? 1 : -1));
+    } catch (e: any) {
+      Alert.alert('提示', e.message || '操作失败，请稍后重试');
+    }
+  };
+
+  // 收藏 / 取消收藏
+  const handleFavorite = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('提示', '请先登录');
+      return;
+    }
+    try {
+      const res = await recipeService.toggleFavorite(Number(id));
+      setIsFavorited(res.data.isFavorited);
+      Alert.alert('提示', res.data.isFavorited ? '已加入收藏' : '已取消收藏');
+    } catch (e: any) {
+      Alert.alert('提示', e.message || '操作失败，请稍后重试');
+    }
+  };
+
+  // 完成烹饪（记录做过这道菜）
+  const handleCookComplete = async () => {
+    setIsCooking(false);
+    try {
+      await recipeService.incrementCookCount(Number(id));
+      setCookCount((c) => c + 1);
+    } catch (e) {
+      console.error('记录做菜次数失败:', e);
+    }
   };
 
   if (isLoading) return (
@@ -51,15 +118,31 @@ export default function RecipeDetailScreen() {
         <View style={styles.cover}>
           {recipe.coverImage
             ? <Image source={{ uri: getImageUrl(recipe.coverImage) ?? '' }} style={styles.coverImg} />
-            : <Text style={{ fontSize: 60 }}>🍲</Text>}
+            : (
+              <View style={styles.coverPlaceholder}>
+                <Text style={{ fontSize: 60 }}>🍲</Text>
+                <TouchableOpacity
+                  style={styles.generateBtn}
+                  onPress={handleGenerateCover}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.generateBtnText}>🎨 AI 生成菜品图</Text>
+                  )}
+                </TouchableOpacity>
+                {isGenerating ? <Text style={styles.generatingHint}>生成中，约 20 秒…</Text> : null}
+              </View>
+            )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.title}>{recipe.title}</Text>
           <View style={styles.stats}>
             <Text style={styles.statText}>👁 {recipe.viewCount || 0} 浏览</Text>
-            <Text style={styles.statText}>🍳 {recipe.cookCount || 0} 人做过</Text>
-            <Text style={styles.statText}>❤️ {recipe.likeCount || 0} 赞</Text>
+            <Text style={styles.statText}>🍳 {cookCount} 人做过</Text>
+            <Text style={styles.statText}>❤️ {likeCount} 赞</Text>
           </View>
         </View>
 
@@ -88,12 +171,42 @@ export default function RecipeDetailScreen() {
       </ScrollView>
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 8 }]}>
-        <TouchableOpacity><Ionicons name="heart-outline" size={24} color={colors.muted} /></TouchableOpacity>
-        <TouchableOpacity><Ionicons name="star-outline" size={24} color={colors.muted} /></TouchableOpacity>
-        <TouchableOpacity style={styles.cookBtn}>
+        <TouchableOpacity style={styles.actionBtn} onPress={handleLike} activeOpacity={0.6}>
+          <Ionicons
+            name={isLiked ? 'heart' : 'heart-outline'}
+            size={26}
+            color={isLiked ? '#ef4444' : colors.muted}
+          />
+          <Text style={[styles.actionLabel, isLiked && styles.actionLabelActive]}>
+            {likeCount}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionBtn} onPress={handleFavorite} activeOpacity={0.6}>
+          <Ionicons
+            name={isFavorited ? 'star' : 'star-outline'}
+            size={26}
+            color={isFavorited ? colors.primary : colors.muted}
+          />
+          <Text style={[styles.actionLabel, isFavorited && styles.actionLabelActive]}>
+            {isFavorited ? '已收藏' : '收藏'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cookBtn} onPress={() => setIsCooking(true)} activeOpacity={0.8}>
           <Text style={styles.cookBtnText}>去做这道菜</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 互动烹饪模式 */}
+      <InteractiveCookingMode
+        visible={isCooking}
+        recipe={recipe}
+        servings={recipe.servings || 2}
+        baseServings={recipe.servings || 2}
+        customWeight=""
+        calcMode="servings"
+        onClose={() => setIsCooking(false)}
+        onComplete={handleCookComplete}
+      />
     </View>
   );
 }
@@ -101,6 +214,10 @@ export default function RecipeDetailScreen() {
 const styles = StyleSheet.create({
   cover: { width: '100%', height: 224, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
   coverImg: { width: '100%', height: '100%' },
+  coverPlaceholder: { alignItems: 'center' },
+  generateBtn: { marginTop: 12, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+  generateBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  generatingHint: { marginTop: 8, color: colors.muted, fontSize: 12 },
   section: { backgroundColor: colors.card, marginTop: 8, padding: 16 },
   title: { ...textStyles.title },
   stats: { flexDirection: 'row', marginTop: 12 },
@@ -116,6 +233,9 @@ const styles = StyleSheet.create({
   stepDesc: { ...textStyles.body },
   stepTime: { ...textStyles.caption, marginTop: 4 },
   bottomBar: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 20, minWidth: 56 },
+  actionLabel: { marginLeft: 4, color: colors.muted, fontSize: 13 },
+  actionLabelActive: { color: colors.text, fontWeight: '600' },
   cookBtn: { marginLeft: 'auto', backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
   cookBtnText: { color: '#fff', fontWeight: '600' },
 });

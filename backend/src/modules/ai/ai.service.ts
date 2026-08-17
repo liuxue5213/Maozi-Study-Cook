@@ -2,6 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { matchIngredient } from '../recipes/recipes.service';
 
@@ -378,6 +380,121 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
       console.error('AI 生成步骤失败:', error.response?.data || error.message);
       throw new BadRequestException('生成步骤失败，请稍后重试');
     }
+  }
+
+  /**
+   * 为指定菜谱生成封面图（服务器端 AI 生图）
+   * @returns 相对路径 /uploads/recipe-covers/xxx.png
+   */
+  async generateRecipeCover(recipeId: number): Promise<string> {
+    const recipe = await this.prisma.recipe.findUnique({
+      where: { id: recipeId },
+      include: { cuisine: { select: { name: true } } },
+    });
+    if (!recipe) {
+      throw new BadRequestException('菜谱不存在');
+    }
+
+    const url = await this.generateDishImage(
+      recipe.title,
+      recipe.description || undefined,
+      recipe.cuisine?.name,
+    );
+
+    await this.prisma.recipe.update({
+      where: { id: recipeId },
+      data: { coverImage: url },
+    });
+
+    return url;
+  }
+
+  /**
+   * 生成菜品图片（ModelScope Z-Image-Turbo，异步任务 + 轮询）
+   * @returns 保存后的相对路径
+   */
+  async generateDishImage(
+    title: string,
+    description?: string,
+    cuisineName?: string,
+  ): Promise<string> {
+    const cuisine = cuisineName || '中餐';
+    const desc = (description || '').slice(0, 60);
+    const prompt = `Professional food photography of a delicious Chinese dish called "${title}", a traditional ${cuisine} cuisine. ${desc ? `The dish features ${desc}.` : ''} Beautifully plated on a ceramic plate with appetizing colors and textures, soft natural lighting from the side, shallow depth of field, dark rustic wooden table background, garnished with fresh herbs, steaming hot, ultra-realistic, 4K, high detail, food magazine style, no text, no watermark.`;
+
+    const apiKey = process.env.MODELSCOPE_API_KEY || 'ms-dd0f5c6b-f3e3-4628-b94d-615e8ff78386';
+    const base = 'https://api-inference.modelscope.cn/';
+    const model = 'Tongyi-MAI/Z-Image-Turbo';
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      // 1. 提交异步生成任务
+      const submit = await firstValueFrom(
+        this.httpService.post<any>(
+          `${base}v1/images/generations`,
+          { model, prompt },
+          {
+            headers: { ...headers, 'X-ModelScope-Async-Mode': 'true' },
+            timeout: 30000,
+          },
+        ),
+      );
+      const taskId = submit.data?.task_id;
+      if (!taskId) {
+        throw new Error('no task_id');
+      }
+
+      // 2. 轮询等待（最多 5 分钟）
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const result = await firstValueFrom(
+          this.httpService.get<any>(`${base}v1/tasks/${taskId}`, {
+            headers: { ...headers, 'X-ModelScope-Task-Type': 'image_generation' },
+            timeout: 30000,
+          }),
+        );
+
+        if (result.data?.task_status === 'SUCCEED') {
+          const imageUrl = result.data?.output_images?.[0];
+          if (!imageUrl) {
+            throw new Error('empty output_images');
+          }
+          return await this.saveImage(imageUrl);
+        }
+        if (result.data?.task_status === 'FAILED') {
+          throw new Error('generation FAILED');
+        }
+      }
+      throw new Error('timeout');
+    } catch (error) {
+      console.error('AI 生成菜品图片失败:', error.message || error);
+      throw new BadRequestException('图片生成失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 下载生成结果并保存到 uploads/recipe-covers/
+   */
+  private async saveImage(imageUrl: string): Promise<string> {
+    const dir = join(__dirname, '..', '..', '..', 'uploads', 'recipe-covers');
+    mkdirSync(dir, { recursive: true });
+
+    const ext = imageUrl.match(/\.(png|jpe?g|webp)/i)?.[1] || 'png';
+    const filename = `recipe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filepath = join(dir, filename);
+
+    const res = await firstValueFrom(
+      this.httpService.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 60000,
+      }),
+    );
+    writeFileSync(filepath, Buffer.from(res.data as ArrayBuffer));
+
+    return `/uploads/recipe-covers/${filename}`;
   }
 
   /**

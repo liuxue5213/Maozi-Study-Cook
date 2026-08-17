@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../stores/authStore';
+import { apiClient } from '../services/apiClient';
 
 /**
  * 偏好设置页面
@@ -18,9 +20,13 @@ export default function SettingsScreen() {
   const { user } = useAuthStore();
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   const tasteOptions = ['清淡鲜美', '经典下饭', '咸甜交织', '无辣不欢', '酸甜开胃'];
   const [selectedTastes, setSelectedTastes] = useState<string[]>([]);
+
+  const goalOptions = ['认真吃好每一顿', '轻盈减脂', '清淡养生', '高蛋白增肌'];
+  const [dietGoal, setDietGoal] = useState(goalOptions[0]);
 
   const toggleTaste = (taste: string) => {
     setSelectedTastes((prev) =>
@@ -28,6 +34,25 @@ export default function SettingsScreen() {
         ? prev.filter((t) => t !== taste)
         : [...prev, taste]
     );
+  };
+
+  // 保存个人资料 + 偏好设置
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await Promise.all([
+        apiClient.put('/users/me', { nickname, bio }),
+        apiClient.put('/users/me/preferences', {
+          dietGoal,
+          tastePreferences: selectedTastes,
+        }),
+      ]);
+      Alert.alert('提示', '保存成功');
+    } catch (e: any) {
+      Alert.alert('提示', e.message || '保存失败，请稍后重试');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -106,18 +131,36 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 key={goal}
                 style={styles.goalRow}
+                onPress={() => setDietGoal(goal)}
+                activeOpacity={0.7}
               >
                 <View style={styles.radioOuter}>
-                  <View style={styles.radioInner} />
+                  {dietGoal === goal ? (
+                    <View style={styles.radioInner} />
+                  ) : null}
                 </View>
-                <Text style={styles.goalText}>{goal}</Text>
+                <Text
+                  style={[
+                    styles.goalText,
+                    dietGoal === goal && styles.goalTextActive,
+                  ]}
+                >
+                  {goal}
+                </Text>
               </TouchableOpacity>
             )
           )}
         </View>
 
-        <TouchableOpacity style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>保存设置</Text>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleSave}
+          disabled={isSaving}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.saveButtonText}>
+            {isSaving ? '保存中…' : '保存设置'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -230,6 +273,10 @@ const styles = StyleSheet.create({
   goalText: {
     color: '#1f2937',
     marginLeft: 12,
+  },
+  goalTextActive: {
+    color: '#f97316',
+    fontWeight: '600',
   },
   saveButton: {
     backgroundColor: '#f97316',

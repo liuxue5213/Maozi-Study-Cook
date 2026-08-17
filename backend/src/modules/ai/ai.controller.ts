@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, UploadedFile, UseInterceptors, BadRequestException, Param, ParseIntPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { AiService } from './ai.service';
@@ -100,5 +100,14 @@ export class AiController {
     }
 
     return this.aiService.generateSteps(title, ingredients, difficulty);
+  }
+
+  @Post('recipes/:id/cover')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '服务器 AI 生成菜品封面图' })
+  async generateRecipeCover(@Param('id', ParseIntPipe) id: number) {
+    const url = await this.aiService.generateRecipeCover(id);
+    return { url };
   }
 }
