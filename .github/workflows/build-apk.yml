@@ -112,9 +112,10 @@ jobs:
             # 后端
             echo "📦 构建后端..."
             cd backend
-            npm ci --production
-            npm run build
-            pm2 restart maozi-api --update-env || pm2 start dist/main.js --name maozi-api
+            npm ci
+            npx prisma migrate deploy 2>/dev/null || echo "  ⚠️  迁移跳过"
+            node_modules/.bin/nest build
+            pm2 restart maozi-api --update-env || pm2 start dist/src/main.js --name maozi-api
             cd ..
 
             # 前端 Web
