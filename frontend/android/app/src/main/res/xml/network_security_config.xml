@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-  <!-- 允许开发服务器和正式服务器的明文流量 -->
-  <domain-config cleartextTrafficPermitted="true">
-    <domain includeSubdomains="false">120.48.13.152</domain>
-    <domain includeSubdomains="false">localhost</domain>
-  </domain-config>
-  
-  <!-- 开发调试：允许所有明文流量（仅开发版本） -->
-  <base-config cleartextTrafficPermitted="false">
-    <trust-anchors>
-      <certificates src="system" />
-    </trust-anchors>
-  </base-config>
-  
-  <!-- 调试模式：允许所有明文流量 -->
-  <debug-overrides>
+  <!-- 完全允许所有明文流量 - 解决连接后端服务器问题 -->
+  <base-config cleartextTrafficPermitted="true">
     <trust-anchors>
       <certificates src="system" />
       <certificates src="user" />
     </trust-anchors>
-  </debug-overrides>
+  </base-config>
+
+  <!-- 明确允许后端服务器 -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">120.48.13.152</domain>
+  </domain-config>
+
+  <!-- 允许本地开发 -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">localhost</domain>
+  </domain-config>
 </network-security-config>
