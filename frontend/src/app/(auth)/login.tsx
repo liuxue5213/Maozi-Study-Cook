@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
@@ -39,26 +40,26 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        className="flex-1 px-6 pt-20"
+        style={styles.scrollView}
         contentContainerStyle={{ flexGrow: 1 }}
       >
         {/* Logo */}
-        <View className="items-center mb-10">
-          <Text className="text-5xl mb-2">🥟</Text>
-          <Text className="text-2xl font-bold text-cooking-text">帽子学做饭</Text>
-          <Text className="text-cooking-muted mt-1">登录开始你的烹饪之旅</Text>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoEmoji}>🥟</Text>
+          <Text style={styles.logoTitle}>帽子学做饭</Text>
+          <Text style={styles.logoSubtitle}>登录开始你的烹饪之旅</Text>
         </View>
 
         {/* 表单 */}
-        <View className="space-y-4">
+        <View style={styles.formContainer}>
           <View>
-            <Text className="text-cooking-text mb-2 font-medium">账号</Text>
+            <Text style={styles.label}>账号</Text>
             <TextInput
-              className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-base"
+              style={styles.input}
               placeholder="用户名/邮箱/手机号"
               value={account}
               onChangeText={setAccount}
@@ -68,9 +69,9 @@ export default function LoginScreen() {
           </View>
 
           <View>
-            <Text className="text-cooking-text mb-2 font-medium">密码</Text>
+            <Text style={styles.label}>密码</Text>
             <TextInput
-              className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-base"
+              style={styles.input}
               placeholder="请输入密码"
               value={password}
               onChangeText={setPassword}
@@ -79,39 +80,138 @@ export default function LoginScreen() {
             />
           </View>
 
-          <TouchableOpacity className="items-end">
-            <Text className="text-cooking-main">忘记密码？</Text>
+          <TouchableOpacity>
+            <Text style={styles.forgotPassword}>忘记密码？</Text>
           </TouchableOpacity>
         </View>
 
         {/* 登录按钮 */}
         <TouchableOpacity
-          className="w-full h-12 bg-cooking-main rounded-xl items-center justify-center mt-8"
+          style={styles.loginButton}
           onPress={handleLogin}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-lg font-semibold">登录</Text>
+            <Text style={styles.loginButtonText}>登录</Text>
           )}
         </TouchableOpacity>
 
         {/* 错误提示 */}
         {errorMsg ? (
-          <View className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-4">
-            <Text className="text-red-500 text-sm">{errorMsg}</Text>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
         ) : null}
 
         {/* 注册入口 */}
-        <View className="flex-row items-center justify-center mt-6">
-          <Text className="text-cooking-muted">还没有账号？</Text>
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>还没有账号？</Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text className="text-cooking-main font-medium ml-1">立即注册</Text>
+            <Text style={styles.registerLink}>立即注册</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 80,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  logoTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  logoSubtitle: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  formContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    color: '#1f2937',
+    marginBottom: 8,
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  input: {
+    width: '100%',
+    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  forgotPassword: {
+    color: '#f97316',
+    fontSize: 14,
+    textAlign: 'right',
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  loginButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  registerText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  registerLink: {
+    color: '#f97316',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+});
