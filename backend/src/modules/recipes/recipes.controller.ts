@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 import { RecipesService } from './recipes.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -8,7 +9,26 @@ import { Public } from '../auth/decorators/public.decorator';
 @ApiTags('recipes')
 @Controller('recipes')
 export class RecipesController {
-  constructor(private readonly recipesService: RecipesService) {}
+  constructor(
+    private readonly recipesService: RecipesService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  /**
+   * 解析可选的用户身份（@Public 路由守卫直接放行不解析 token，需手动处理）
+   */
+  private async parseOptionalUserId(req: any): Promise<number | undefined> {
+    if (req.user?.id) return req.user.id;
+    const auth: string = req.headers?.authorization || '';
+    if (!auth.startsWith('Bearer ')) return undefined;
+    try {
+      const payload = await this.jwtService.verifyAsync(auth.slice(7));
+      return payload?.id ?? payload?.sub;
+    } catch {
+      // token 无效时按游客处理，不阻断公开接口
+      return undefined;
+    }
+  }
 
   @Get()
   @Public()
@@ -51,7 +71,7 @@ export class RecipesController {
   @ApiOperation({ summary: '获取菜谱详情' })
   async findOne(@Param('id') id: number, @Req() req) {
     // 从 token 中获取 userId（如果有）
-    const userId = req.user?.id;
+    const userId = await this.parseOptionalUserId(req);
     return this.recipesService.findOne(+id, userId);
   }
 
