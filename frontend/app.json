@@ -28,7 +28,9 @@
       },
       "package": "com.maozi.studycook",
       "versionCode": 1,
+      "usesCleartextTraffic": true,
       "permissions": [
+        "android.permission.INTERNET",
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -45,7 +47,7 @@
         "expo-image-picker",
         {
           "photosPermission": "需要访问相册来选择菜品照片",
-          "cameraPermission": "需要访问相机来拍摄食材照片"
+          "cameraPermission": "需要使用相机拍摄食材照片"
         }
       ],
       [
@@ -54,7 +56,8 @@
           "fonts": []
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withAllowHttp.js"
     ],
     "experiments": {
       "typedRoutes": true
