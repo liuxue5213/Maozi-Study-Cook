@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -94,9 +95,12 @@ export default function CameraScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-cooking-background">
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       {/* 识别类型选择 */}
-      <View className="flex-row px-4 pt-4 pb-2">
+      <View style={styles.tabBar}>
         {[
           { key: 'ingredient', label: '识别食材' },
           { key: 'food', label: '识别菜品' },
@@ -104,17 +108,17 @@ export default function CameraScreen() {
         ].map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`px-4 py-2 rounded-full mr-3 ${
-              activeTab === tab.key
-                ? 'bg-cooking-main'
-                : 'bg-white border border-gray-200'
-            }`}
+            style={[
+              styles.tabButton,
+              activeTab === tab.key ? styles.tabButtonActive : styles.tabButtonInactive,
+            ]}
             onPress={() => setActiveTab(tab.key as any)}
           >
             <Text
-              className={`text-sm ${
-                activeTab === tab.key ? 'text-white' : 'text-cooking-text'
-              }`}
+              style={[
+                styles.tabButtonText,
+                activeTab === tab.key ? styles.tabButtonTextActive : styles.tabButtonTextInactive,
+              ]}
             >
               {tab.label}
             </Text>
@@ -123,16 +127,16 @@ export default function CameraScreen() {
       </View>
 
       {/* 图片区域 */}
-      <View className="px-4 py-4">
+      <View style={styles.imageSection}>
         {imageUri ? (
-          <View className="rounded-xl overflow-hidden">
+          <View style={styles.imageWrap}>
             <Image
               source={{ uri: imageUri }}
-              className="w-full h-64"
+              style={styles.image}
               resizeMode="cover"
             />
             <TouchableOpacity
-              className="absolute top-3 right-3 bg-black/50 rounded-full w-8 h-8 items-center justify-center"
+              style={styles.closeButton}
               onPress={() => {
                 setImageUri(null);
                 setRecognizedItems([]);
@@ -143,54 +147,54 @@ export default function CameraScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <View className="w-full h-64 bg-white rounded-xl items-center justify-center border-2 border-dashed border-gray-200">
+          <View style={styles.imagePlaceholder}>
             <Ionicons name="image-outline" size={48} color="#d1d5db" />
-            <Text className="text-cooking-muted mt-2">选择或拍摄一张照片</Text>
+            <Text style={styles.imagePlaceholderText}>选择或拍摄一张照片</Text>
           </View>
         )}
 
         {/* 操作按钮 */}
-        <View className="flex-row mt-4 space-x-4">
+        <View style={styles.actionButtons}>
           <TouchableOpacity
-            className="flex-1 bg-white border border-cooking-main rounded-xl py-3 items-center flex-row justify-center"
+            style={styles.albumButton}
             onPress={pickImage}
           >
             <Ionicons name="images-outline" size={20} color="#f97316" />
-            <Text className="text-cooking-main ml-2">相册选择</Text>
+            <Text style={styles.albumButtonText}>相册选择</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className="flex-1 bg-cooking-main rounded-xl py-3 items-center flex-row justify-center"
+            style={styles.cameraButton}
             onPress={takePhoto}
           >
             <Ionicons name="camera-outline" size={20} color="white" />
-            <Text className="text-white ml-2">拍照</Text>
+            <Text style={styles.cameraButtonText}>拍照</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* 识别中 */}
       {recognizing && (
-        <View className="px-4 py-6 items-center">
+        <View style={styles.recognizing}>
           <ActivityIndicator size="large" color="#f97316" />
-          <Text className="text-cooking-muted mt-3">AI 识别中...</Text>
+          <Text style={styles.recognizingText}>AI 识别中...</Text>
         </View>
       )}
 
       {/* 识别结果 */}
       {recognizedItems.length > 0 && !recognizing && (
-        <View className="px-4 pb-4">
-          <Text className="text-lg font-bold text-cooking-text mb-3">
+        <View style={styles.resultSection}>
+          <Text style={styles.resultTitle}>
             识别结果
           </Text>
-          <View className="flex-row flex-wrap">
+          <View style={styles.itemList}>
             {recognizedItems.map((item: any, idx: number) => (
               <View
                 key={idx}
-                className="bg-white rounded-lg px-3 py-2 mr-2 mb-2 flex-row items-center"
+                style={styles.itemChip}
               >
-                <Text className="text-cooking-text font-medium">{item.name}</Text>
+                <Text style={styles.itemName}>{item.name}</Text>
                 {item.category && (
-                  <Text className="text-cooking-muted text-xs ml-2 bg-gray-100 px-2 py-0.5 rounded">
+                  <Text style={styles.itemCategory}>
                     {item.category}
                   </Text>
                 )}
@@ -202,41 +206,41 @@ export default function CameraScreen() {
 
       {/* 推荐菜谱 */}
       {recommendations.length > 0 && !recognizing && (
-        <View className="px-4 pb-6">
-          <Text className="text-lg font-bold text-cooking-text mb-3">
+        <View style={styles.recommendSection}>
+          <Text style={styles.resultTitle}>
             🍳 可以做的菜
           </Text>
           {recommendations.map((rec: any, idx: number) => (
             <TouchableOpacity
               key={idx}
-              className="bg-white rounded-xl p-4 mb-3 shadow-sm"
+              style={styles.recommendCard}
               onPress={() =>
                 rec.recipeId && router.push(`/recipe/${rec.recipeId}`)
               }
             >
-              <View className="flex-row items-center justify-between">
-                <Text className="text-base font-semibold text-cooking-text">
+              <View style={styles.recommendHeader}>
+                <Text style={styles.recommendTitle}>
                   {rec.title}
                 </Text>
                 {rec.matchScore && (
-                  <Text className="text-cooking-main text-sm">
+                  <Text style={styles.recommendScore}>
                     {Math.round(rec.matchScore * 100)}% 匹配
                   </Text>
                 )}
               </View>
               {rec.reason && (
-                <Text className="text-cooking-muted text-sm mt-1">
+                <Text style={styles.recommendReason}>
                   {rec.reason}
                 </Text>
               )}
               {rec.missingIngredients?.length > 0 && (
-                <Text className="text-orange-500 text-xs mt-2">
+                <Text style={styles.recommendMissing}>
                   缺: {rec.missingIngredients.join('、')}
                 </Text>
               )}
-              <View className="flex-row mt-2 text-xs text-cooking-muted">
-                {rec.difficulty && <Text>难度{rec.difficulty}⭐</Text>}
-                {rec.cookTime && <Text className="ml-3">⏱ {rec.cookTime}分钟</Text>}
+              <View style={styles.recommendMetaRow}>
+                {rec.difficulty && <Text style={styles.recommendMeta}>难度{rec.difficulty}⭐</Text>}
+                {rec.cookTime && <Text style={styles.recommendMetaTime}>⏱ {rec.cookTime}分钟</Text>}
               </View>
             </TouchableOpacity>
           ))}
@@ -247,18 +251,18 @@ export default function CameraScreen() {
       {recognizedItems.length > 0 &&
         recommendations.length === 0 &&
         !recognizing && (
-          <View className="px-4 pb-8 items-center">
-            <View className="bg-white rounded-xl px-6 py-8 items-center w-full">
-              <Text className="text-3xl mb-2">🤔</Text>
-              <Text className="text-cooking-text font-medium mb-1">
+          <View style={styles.emptySection}>
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyIcon}>🤔</Text>
+              <Text style={styles.emptyTitle}>
                 暂时没有找到匹配的菜谱
               </Text>
-              <Text className="text-cooking-muted text-sm text-center leading-5 mb-4">
+              <Text style={styles.emptyDesc}>
                 识别出的食材组合暂无推荐{'\n'}
                 你可以自己动手创建这道菜！
               </Text>
               <TouchableOpacity
-                className="bg-cooking-main px-6 py-3 rounded-full"
+                style={styles.emptyButton}
                 onPress={() =>
                   router.push({
                     pathname: '/create-recipe',
@@ -270,7 +274,7 @@ export default function CameraScreen() {
                   })
                 }
               >
-                <Text className="text-white font-semibold">
+                <Text style={styles.emptyButtonText}>
                   ✏️ 创建这道菜
                 </Text>
               </TouchableOpacity>
@@ -280,3 +284,250 @@ export default function CameraScreen() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
+  },
+  contentContainer: {
+    paddingBottom: 90,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  tabButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    marginRight: 12,
+  },
+  tabButtonActive: {
+    backgroundColor: '#f97316',
+  },
+  tabButtonInactive: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  tabButtonText: {
+    fontSize: 14,
+  },
+  tabButtonTextActive: {
+    color: '#fff',
+  },
+  tabButtonTextInactive: {
+    color: '#1f2937',
+  },
+  imageSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  imageWrap: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: 256,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 9999,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 256,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#e5e7eb',
+  },
+  imagePlaceholderText: {
+    color: '#9ca3af',
+    marginTop: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    marginTop: 16,
+    gap: 16,
+  },
+  albumButton: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#f97316',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  albumButtonText: {
+    color: '#f97316',
+    marginLeft: 8,
+  },
+  cameraButton: {
+    flex: 1,
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  cameraButtonText: {
+    color: '#fff',
+    marginLeft: 8,
+  },
+  recognizing: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  recognizingText: {
+    color: '#9ca3af',
+    marginTop: 12,
+  },
+  resultSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  resultTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  itemList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  itemChip: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemName: {
+    color: '#1f2937',
+    fontWeight: '500',
+  },
+  itemCategory: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginLeft: 8,
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  recommendSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  recommendCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  recommendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recommendTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  recommendScore: {
+    color: '#f97316',
+    fontSize: 14,
+  },
+  recommendReason: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  recommendMissing: {
+    color: '#f97316',
+    fontSize: 12,
+    marginTop: 8,
+  },
+  recommendMetaRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  recommendMeta: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  recommendMetaTime: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginLeft: 12,
+  },
+  emptySection: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  emptyCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    alignItems: 'center',
+    width: '100%',
+  },
+  emptyIcon: {
+    fontSize: 30,
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    color: '#1f2937',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  emptyDesc: {
+    color: '#9ca3af',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  emptyButton: {
+    backgroundColor: '#f97316',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+});

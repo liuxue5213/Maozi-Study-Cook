@@ -3,7 +3,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import '../../global.css';
 
 // 防止启动屏自动隐藏
 SplashScreen.preventAutoHideAsync();

@@ -7,6 +7,7 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -190,72 +191,72 @@ export default function InteractiveCookingMode({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-cooking-background" style={{ paddingTop: insets.top }}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* ===== 顶部导航 ===== */}
-        <View className="flex-row items-center px-4 py-3 bg-white border-b border-gray-100">
+        <View style={styles.navBar}>
           <TouchableOpacity onPress={onClose}>
             <Ionicons name="close" size={26} color="#6b7280" />
           </TouchableOpacity>
-          <Text className="ml-3 text-base font-bold text-cooking-text flex-1" numberOfLines={1}>
+          <Text style={styles.navTitle} numberOfLines={1}>
             {recipe.title}
           </Text>
-          <Text className="text-cooking-muted text-sm">
+          <Text style={styles.navServings}>
             {servings || baseServings}人份
           </Text>
         </View>
 
         {/* ===== 完成庆祝 ===== */}
         {isCompleted ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <Text className="text-6xl mb-4">🎉</Text>
-            <Text className="text-2xl font-bold text-cooking-text mb-2">
+          <View style={styles.completedContainer}>
+            <Text style={styles.completedEmoji}>🎉</Text>
+            <Text style={styles.completedTitle}>
               恭喜完成！
             </Text>
-            <Text className="text-cooking-muted text-center mb-6">
+            <Text style={styles.completedText}>
               你成功做出了「{recipe.title}」{'\n'}
               味道一定很棒，记得拍照分享哦！
             </Text>
-            <View className="flex-row">
+            <View style={styles.completedButtons}>
               <TouchableOpacity
-                className="bg-gray-100 px-6 py-3 rounded-full mr-4"
+                style={styles.restartButton}
                 onPress={handleRestart}
               >
-                <Text className="text-cooking-text font-medium">再做一次</Text>
+                <Text style={styles.restartText}>再做一次</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="bg-cooking-main px-8 py-3 rounded-full"
+                style={styles.completeButton}
                 onPress={onComplete}
               >
-                <Text className="text-white font-semibold">完成打卡 ✓</Text>
+                <Text style={styles.completeButtonText}>完成打卡 ✓</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <>
             {/* ===== 进度条 ===== */}
-            <View className="bg-white px-4 pb-3">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-cooking-muted text-xs">
+            <View style={styles.progressSection}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>
                   步骤 {currentStep + 1} / {totalSteps}
                 </Text>
-                <Text className="text-cooking-main text-xs font-medium">
+                <Text style={styles.progressPercent}>
                   {Math.round(progress)}%
                 </Text>
               </View>
-              <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <View style={styles.progressTrack}>
                 <View
-                  className="h-full bg-cooking-main rounded-full"
-                  style={{ width: `${progress}%` }}
+                  style={[styles.progressBar, { width: `${progress}%` }]}
                 />
               </View>
               {/* 步骤指示点 */}
-              <View className="flex-row justify-between mt-2">
+              <View style={styles.dotsRow}>
                 {steps.map((_: any, i: number) => (
                   <View
                     key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      i <= currentStep ? 'bg-cooking-main' : 'bg-gray-300'
-                    }`}
+                    style={[
+                      styles.dot,
+                      i <= currentStep ? styles.dotActive : styles.dotInactive,
+                    ]}
                   />
                 ))}
               </View>
@@ -263,35 +264,37 @@ export default function InteractiveCookingMode({
 
             {/* ===== 步骤内容（可滚动） ===== */}
             <Animated.View
-              className="flex-1"
-              style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+              style={[
+                styles.animatedContainer,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
             >
-              <View className="flex-1 px-4 py-4">
+              <View style={styles.stepContent}>
                 {/* 步骤序号 + 描述 */}
-                <View className="bg-white rounded-2xl p-5 mb-4">
-                  <View className="flex-row items-center mb-3">
-                    <View className="w-12 h-12 bg-cooking-main rounded-full items-center justify-center">
-                      <Text className="text-white text-xl font-bold">
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.stepNumberBadge}>
+                      <Text style={styles.stepNumberText}>
                         {step.stepNumber}
                       </Text>
                     </View>
                     {step.duration && (
-                      <View className="ml-3 bg-orange-50 px-3 py-1 rounded-full">
-                        <Text className="text-cooking-main text-sm">
+                      <View style={styles.durationChip}>
+                        <Text style={styles.durationText}>
                           ⏱ 建议 {step.duration} 分钟
                         </Text>
                       </View>
                     )}
                   </View>
 
-                  <Text className="text-lg text-cooking-text leading-7">
+                  <Text style={styles.stepDescription}>
                     {step.description}
                   </Text>
 
                   {step.tips && (
-                    <View className="bg-yellow-50 rounded-xl px-4 py-3 mt-3 flex-row items-start">
-                      <Text className="text-lg">💡</Text>
-                      <Text className="text-yellow-700 text-sm flex-1 ml-2 leading-5">
+                    <View style={styles.tipsContainer}>
+                      <Text style={styles.tipsEmoji}>💡</Text>
+                      <Text style={styles.tipsText}>
                         {step.tips}
                       </Text>
                     </View>
@@ -300,17 +303,17 @@ export default function InteractiveCookingMode({
 
                 {/* 本步所需食材（精确用量） */}
                 {stepIngredients.length > 0 && (
-                  <View className="bg-white rounded-2xl p-5 mb-4">
-                    <Text className="text-sm font-bold text-cooking-text mb-3">
+                  <View style={styles.card}>
+                    <Text style={styles.ingCardTitle}>
                       📋 本步所需食材
                     </Text>
                     {stepIngredients.map((ing: any, idx: number) => (
                       <View
                         key={idx}
-                        className="flex-row items-center justify-between py-2 border-b border-gray-50"
+                        style={styles.ingRow}
                       >
-                        <Text className="text-cooking-text">{ing.name}</Text>
-                        <Text className="text-cooking-main font-bold">
+                        <Text style={styles.ingName}>{ing.name}</Text>
+                        <Text style={styles.ingAmount}>
                           {ing.scaledAmount}
                         </Text>
                       </View>
@@ -319,39 +322,40 @@ export default function InteractiveCookingMode({
                 )}
 
                 {/* 计时器 */}
-                <View className="bg-white rounded-2xl p-5 items-center">
-                  <Text className="text-cooking-muted text-sm mb-2">
+                <View style={styles.timerCard}>
+                  <Text style={styles.timerLabel}>
                     ⏱ 厨房计时器
                   </Text>
-                  <Text className="text-4xl font-bold text-cooking-text font-mono mb-3">
+                  <Text style={styles.timerText}>
                     {formatTime(timerSeconds)}
                   </Text>
-                  <View className="flex-row items-center">
+                  <View style={styles.timerButtons}>
                     <TouchableOpacity
-                      className={`px-6 py-2 rounded-full ${
-                        timerRunning ? 'bg-red-500' : 'bg-cooking-main'
-                      }`}
+                      style={[
+                        styles.timerButton,
+                        timerRunning ? styles.timerButtonRunning : styles.timerButtonNormal,
+                      ]}
                       onPress={toggleTimer}
                     >
-                      <Text className="text-white font-medium">
+                      <Text style={styles.timerButtonText}>
                         {timerRunning ? '⏸ 暂停' : timerSeconds > 0 ? '▶ 继续' : '▶ 开始'}
                       </Text>
                     </TouchableOpacity>
                     {timerSeconds > 0 && (
                       <TouchableOpacity
-                        className="ml-3 px-4 py-2 rounded-full bg-gray-100"
+                        style={styles.resetButton}
                         onPress={() => {
                           setTimerSeconds(0);
                           setTimerRunning(false);
                           if (timerRef.current) clearInterval(timerRef.current);
                         }}
                       >
-                        <Text className="text-cooking-muted">重置</Text>
+                        <Text style={styles.resetText}>重置</Text>
                       </TouchableOpacity>
                     )}
                   </View>
                   {stepDuration > 0 && timerSeconds >= stepDuration && (
-                    <Text className="text-green-600 font-bold mt-2">✅ 时间到！</Text>
+                    <Text style={styles.timerDoneText}>✅ 时间到！</Text>
                   )}
                 </View>
               </View>
@@ -359,27 +363,26 @@ export default function InteractiveCookingMode({
 
             {/* ===== 底部操作按钮 ===== */}
             <View
-              className="bg-white border-t border-gray-100 px-4 py-4 flex-row items-center"
-              style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+              style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}
             >
               {currentStep > 0 && (
                 <TouchableOpacity
-                  className="px-5 py-3 rounded-full bg-gray-100 mr-3"
+                  style={styles.prevButton}
                   onPress={() => {
                     if (timerRef.current) clearInterval(timerRef.current);
                     setTimerRunning(false);
                     setCurrentStep(currentStep - 1);
                   }}
                 >
-                  <Text className="text-cooking-text font-medium">← 上一步</Text>
+                  <Text style={styles.prevButtonText}>← 上一步</Text>
                 </TouchableOpacity>
               )}
 
               <TouchableOpacity
-                className="flex-1 bg-cooking-main py-4 rounded-full items-center"
+                style={styles.nextButton}
                 onPress={handleNext}
               >
-                <Text className="text-white text-lg font-semibold">
+                <Text style={styles.nextButtonText}>
                   {currentStep === totalSteps - 1 ? '🎉 完成烹饪' : '✓ 完成这一步'}
                 </Text>
               </TouchableOpacity>
@@ -390,3 +393,294 @@ export default function InteractiveCookingMode({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
+  },
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  navTitle: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    flex: 1,
+  },
+  navServings: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  completedContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  completedEmoji: {
+    fontSize: 60,
+    marginBottom: 16,
+  },
+  completedTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  completedText: {
+    color: '#9ca3af',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  completedButtons: {
+    flexDirection: 'row',
+  },
+  restartButton: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
+    marginRight: 16,
+  },
+  restartText: {
+    color: '#1f2937',
+    fontWeight: '500',
+  },
+  completeButton: {
+    backgroundColor: '#f97316',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 9999,
+  },
+  completeButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  progressSection: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  progressPercent: {
+    color: '#f97316',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 9999,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#f97316',
+    borderRadius: 9999,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 9999,
+  },
+  dotActive: {
+    backgroundColor: '#f97316',
+  },
+  dotInactive: {
+    backgroundColor: '#d1d5db',
+  },
+  animatedContainer: {
+    flex: 1,
+  },
+  stepContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stepNumberBadge: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#f97316',
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  durationChip: {
+    marginLeft: 12,
+    backgroundColor: '#fff7ed',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  durationText: {
+    color: '#f97316',
+    fontSize: 14,
+  },
+  stepDescription: {
+    fontSize: 18,
+    color: '#1f2937',
+    lineHeight: 28,
+  },
+  tipsContainer: {
+    backgroundColor: '#fefce8',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tipsEmoji: {
+    fontSize: 18,
+  },
+  tipsText: {
+    color: '#a16207',
+    fontSize: 14,
+    flex: 1,
+    marginLeft: 8,
+    lineHeight: 20,
+  },
+  ingCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  ingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f9fafb',
+  },
+  ingName: {
+    color: '#1f2937',
+  },
+  ingAmount: {
+    color: '#f97316',
+    fontWeight: '700',
+  },
+  timerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  timerLabel: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  timerText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#1f2937',
+    fontFamily: 'monospace',
+    marginBottom: 12,
+  },
+  timerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timerButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 9999,
+  },
+  timerButtonRunning: {
+    backgroundColor: '#ef4444',
+  },
+  timerButtonNormal: {
+    backgroundColor: '#f97316',
+  },
+  timerButtonText: {
+    color: '#fff',
+    fontWeight: '500',
+  },
+  resetButton: {
+    marginLeft: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    backgroundColor: '#f3f4f6',
+  },
+  resetText: {
+    color: '#9ca3af',
+  },
+  timerDoneText: {
+    color: '#16a34a',
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  bottomBar: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  prevButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 9999,
+    backgroundColor: '#f3f4f6',
+    marginRight: 12,
+  },
+  prevButtonText: {
+    color: '#1f2937',
+    fontWeight: '500',
+  },
+  nextButton: {
+    flex: 1,
+    backgroundColor: '#f97316',
+    paddingVertical: 16,
+    borderRadius: 9999,
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});

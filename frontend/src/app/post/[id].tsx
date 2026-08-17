@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,7 +64,7 @@ export default function PostDetailScreen() {
 
   if (isLoading || !post) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View style={styles.loading}>
         <ActivityIndicator size="large" color="#f97316" />
       </View>
     );
@@ -71,36 +72,36 @@ export default function PostDetailScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-cooking-background"
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView className="flex-1">
+      <ScrollView style={styles.scrollView}>
         {/* 帖子内容 */}
-        <View className="bg-white px-4 py-4">
-          <View className="flex-row items-center mb-3">
-            <View className="w-10 h-10 bg-cooking-main/10 rounded-full items-center justify-center">
-              <Text className="text-lg">👨‍🍳</Text>
+        <View style={styles.postCard}>
+          <View style={styles.userRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarEmoji}>👨‍🍳</Text>
             </View>
-            <View className="ml-3">
-              <Text className="text-cooking-text font-medium">
+            <View style={styles.userInfo}>
+              <Text style={styles.nickname}>
                 {post.user?.nickname || '匿名用户'}
               </Text>
-              <Text className="text-cooking-muted text-xs">
+              <Text style={styles.timeText}>
                 {new Date(post.createdAt).toLocaleString()}
               </Text>
             </View>
           </View>
 
-          <Text className="text-cooking-text leading-5">{post.content}</Text>
+          <Text style={styles.contentText}>{post.content}</Text>
 
           {post.images?.length > 0 && (
-            <View className="flex-row flex-wrap mt-3">
+            <View style={styles.imageGrid}>
               {post.images.map((img: any, idx: number) => (
                 <View
                   key={idx}
-                  className="w-[32%] h-24 bg-gray-100 rounded-lg mr-[2%] mb-2 items-center justify-center"
+                  style={styles.imageCell}
                 >
-                  <Text className="text-2xl">🍲</Text>
+                  <Text style={styles.imageEmoji}>🍲</Text>
                 </View>
               ))}
             </View>
@@ -108,28 +109,28 @@ export default function PostDetailScreen() {
         </View>
 
         {/* 评论列表 */}
-        <View className="bg-white mt-2 px-4 py-4">
-          <Text className="text-base font-bold text-cooking-text mb-3">
+        <View style={[styles.postCard, styles.commentsCard]}>
+          <Text style={styles.commentsTitle}>
             评论 ({comments.length})
           </Text>
           {comments.length === 0 ? (
-            <Text className="text-cooking-muted text-center py-6">
+            <Text style={styles.emptyText}>
               暂无评论，来说两句吧
             </Text>
           ) : (
             comments.map((comment: any) => (
-              <View key={comment.id} className="flex-row mb-4">
-                <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+              <View key={comment.id} style={styles.commentRow}>
+                <View style={styles.commentAvatar}>
                   <Text>👤</Text>
                 </View>
-                <View className="flex-1 ml-3">
-                  <Text className="text-cooking-text text-sm font-medium">
+                <View style={styles.commentBody}>
+                  <Text style={styles.commentNickname}>
                     {comment.user?.nickname}
                   </Text>
-                  <Text className="text-cooking-text text-sm mt-1">
+                  <Text style={styles.commentContent}>
                     {comment.content}
                   </Text>
-                  <Text className="text-cooking-muted text-xs mt-1">
+                  <Text style={styles.commentTime}>
                     {new Date(comment.createdAt).toLocaleString()}
                   </Text>
                 </View>
@@ -140,9 +141,9 @@ export default function PostDetailScreen() {
       </ScrollView>
 
       {/* 评论输入栏 */}
-      <View className="bg-white border-t border-gray-100 px-4 py-3 flex-row items-center">
+      <View style={styles.inputBar}>
         <TextInput
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm"
+          style={styles.commentInput}
           placeholder={isAuthenticated ? '说点什么...' : '登录后评论'}
           placeholderTextColor="#9ca3af"
           value={commentText}
@@ -150,7 +151,7 @@ export default function PostDetailScreen() {
           editable={isAuthenticated}
         />
         <TouchableOpacity
-          className="ml-3 bg-cooking-main w-9 h-9 rounded-full items-center justify-center"
+          style={styles.sendButton}
           onPress={handleComment}
         >
           <Ionicons name="send" size={16} color="white" />
@@ -159,3 +160,143 @@ export default function PostDetailScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  postCard: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  commentsCard: {
+    marginTop: 8,
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: {
+    fontSize: 18,
+  },
+  userInfo: {
+    marginLeft: 12,
+  },
+  nickname: {
+    color: '#1f2937',
+    fontWeight: '500',
+  },
+  timeText: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  contentText: {
+    color: '#1f2937',
+    lineHeight: 20,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+  },
+  imageCell: {
+    width: '32%',
+    height: 96,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    marginRight: '2%',
+    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageEmoji: {
+    fontSize: 24,
+  },
+  commentsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  emptyText: {
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingVertical: 24,
+  },
+  commentRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentBody: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  commentNickname: {
+    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  commentContent: {
+    color: '#1f2937',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  commentTime: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  inputBar: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  sendButton: {
+    marginLeft: 12,
+    backgroundColor: '#f97316',
+    width: 36,
+    height: 36,
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

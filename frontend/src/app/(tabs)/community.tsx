@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -68,16 +69,16 @@ export default function CommunityScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f97316" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-cooking-background">
+    <View style={styles.container}>
       {/* 顶部 Tab */}
-      <View className="flex-row px-4 pt-3 pb-2 bg-white border-b border-gray-100">
+      <View style={styles.tabBar}>
         {(
           [
             { key: 'hot', label: '推荐' },
@@ -87,19 +88,19 @@ export default function CommunityScreen() {
         ).map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            className={`px-4 py-2 mr-4 ${
-              activeTab === tab.key
-                ? 'border-b-2 border-cooking-main'
-                : ''
-            }`}
+            style={[
+              styles.tabItem,
+              activeTab === tab.key ? styles.tabItemActive : null,
+            ]}
             onPress={() => setActiveTab(tab.key)}
           >
             <Text
-              className={`text-sm ${
+              style={[
+                styles.tabLabel,
                 activeTab === tab.key
-                  ? 'text-cooking-main font-semibold'
-                  : 'text-cooking-muted'
-              }`}
+                  ? styles.tabLabelActive
+                  : styles.tabLabelInactive,
+              ]}
             >
               {tab.label}
             </Text>
@@ -108,6 +109,8 @@ export default function CommunityScreen() {
       </View>
 
       <FlatList
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
         data={posts}
         keyExtractor={(item: any) => item.id.toString()}
         refreshControl={
@@ -117,13 +120,13 @@ export default function CommunityScreen() {
         onEndReachedThreshold={0.3}
         renderItem={({ item }: { item: any }) => <PostCard post={item} />}
         ListEmptyComponent={
-          <View className="py-20 items-center">
-            <Text className="text-cooking-muted">暂无动态</Text>
+          <View style={styles.emptyComponent}>
+            <Text style={styles.emptyText}>暂无动态</Text>
           </View>
         }
         ListFooterComponent={
           hasMore ? (
-            <View className="py-4 items-center">
+            <View style={styles.footerComponent}>
               <ActivityIndicator size="small" color="#f97316" />
             </View>
           ) : null
@@ -133,7 +136,7 @@ export default function CommunityScreen() {
       {/* 发布按钮 */}
       {isAuthenticated && (
         <TouchableOpacity
-          className="absolute bottom-6 right-5 w-14 h-14 bg-cooking-main rounded-full items-center justify-center shadow-lg"
+          style={styles.fab}
           onPress={() => router.push('/(tabs)/camera')}
         >
           <Ionicons name="add" size={28} color="white" />
@@ -158,46 +161,47 @@ function PostCard({ post }: { post: any }) {
 
   return (
     <TouchableOpacity
-      className="bg-white px-4 py-4 mb-2"
+      style={styles.postCard}
       onPress={() => router.push(`/post/${post.id}`)}
     >
       {/* 用户信息 */}
-      <View className="flex-row items-center mb-3">
-        <View className="w-10 h-10 bg-cooking-main/10 rounded-full items-center justify-center">
-          <Text className="text-lg">
+      <View style={styles.postUserRow}>
+        <View style={styles.postAvatar}>
+          <Text style={styles.postAvatarText}>
             {post.user?.avatar ? '👤' : '👨‍🍳'}
           </Text>
         </View>
-        <View className="ml-3">
-          <Text className="text-cooking-text font-medium">
+        <View style={styles.postUserMeta}>
+          <Text style={styles.postNickname}>
             {post.user?.nickname || '匿名用户'}
           </Text>
-          <Text className="text-cooking-muted text-xs">
+          <Text style={styles.postDate}>
             {new Date(post.createdAt).toLocaleDateString()}
           </Text>
         </View>
         {post.isCheckin && (
-          <View className="ml-auto bg-cooking-secondary/10 px-2 py-1 rounded">
-            <Text className="text-cooking-secondary text-xs">打卡</Text>
+          <View style={styles.checkinBadge}>
+            <Text style={styles.checkinBadgeText}>打卡</Text>
           </View>
         )}
       </View>
 
       {/* 内容 */}
-      <Text className="text-cooking-text leading-5 mb-3">{post.content}</Text>
+      <Text style={styles.postContent}>{post.content}</Text>
 
       {/* 图片 */}
       {post.images?.length > 0 && (
-        <View className="flex-row flex-wrap mb-3">
+        <View style={styles.postImages}>
           {post.images.slice(0, 3).map((img: any, idx: number) => (
             <View
               key={idx}
-              className={`w-[32%] h-24 bg-gray-100 rounded-lg mr-[2%] ${
-                idx === 2 ? 'mr-0' : ''
-              }`}
+              style={[
+                styles.postImage,
+                idx === 2 ? styles.postImageLast : null,
+              ]}
             >
-              <View className="w-full h-full items-center justify-center">
-                <Text className="text-2xl">🍲</Text>
+              <View style={styles.postImageInner}>
+                <Text style={styles.postImageIcon}>🍲</Text>
               </View>
             </View>
           ))}
@@ -206,18 +210,18 @@ function PostCard({ post }: { post: any }) {
 
       {/* 关联菜谱 */}
       {post.recipe && (
-        <View className="bg-gray-50 rounded-lg px-3 py-2 mb-3 flex-row items-center">
-          <Text className="text-cooking-muted text-sm">关联菜谱：</Text>
-          <Text className="text-cooking-main text-sm ml-1">
+        <View style={styles.postRecipe}>
+          <Text style={styles.postRecipeLabel}>关联菜谱：</Text>
+          <Text style={styles.postRecipeTitle}>
             {post.recipe.title}
           </Text>
         </View>
       )}
 
       {/* 互动栏 */}
-      <View className="flex-row items-center justify-around pt-2 border-t border-gray-50">
+      <View style={styles.postActions}>
         <TouchableOpacity
-          className="flex-row items-center"
+          style={styles.postActionButton}
           onPress={handleLike}
         >
           <Ionicons
@@ -225,23 +229,23 @@ function PostCard({ post }: { post: any }) {
             size={18}
             color={post.isLiked ? '#ef4444' : '#9ca3af'}
           />
-          <Text className="text-cooking-muted text-xs ml-1">
+          <Text style={styles.postActionText}>
             {post.likeCount || 0}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center"
+          style={styles.postActionButton}
           onPress={() => router.push(`/post/${post.id}`)}
         >
           <Ionicons name="chatbubble-outline" size={18} color="#9ca3af" />
-          <Text className="text-cooking-muted text-xs ml-1">
+          <Text style={styles.postActionText}>
             {post.commentCount || 0}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center"
+          style={styles.postActionButton}
           onPress={() => {
             if (navigator.share) {
               navigator.share({
@@ -252,9 +256,190 @@ function PostCard({ post }: { post: any }) {
           }}
         >
           <Ionicons name="share-outline" size={18} color="#9ca3af" />
-          <Text className="text-cooking-muted text-xs ml-1">分享</Text>
+          <Text style={styles.postActionText}>分享</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  tabItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 16,
+  },
+  tabItemActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#f97316',
+  },
+  tabLabel: {
+    fontSize: 14,
+  },
+  tabLabelActive: {
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  tabLabelInactive: {
+    color: '#9ca3af',
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: 90,
+  },
+  emptyComponent: {
+    paddingVertical: 80,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#9ca3af',
+  },
+  footerComponent: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    backgroundColor: '#f97316',
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  postCard: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
+  },
+  postUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  postAvatar: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postAvatarText: {
+    fontSize: 18,
+  },
+  postUserMeta: {
+    marginLeft: 12,
+  },
+  postNickname: {
+    color: '#1f2937',
+    fontWeight: '500',
+  },
+  postDate: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  checkinBadge: {
+    marginLeft: 'auto',
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  checkinBadgeText: {
+    color: '#059669',
+    fontSize: 12,
+  },
+  postContent: {
+    color: '#1f2937',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  postImages: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  postImage: {
+    width: '32%',
+    height: 96,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    marginRight: '2%',
+  },
+  postImageLast: {
+    marginRight: 0,
+  },
+  postImageInner: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postImageIcon: {
+    fontSize: 24,
+  },
+  postRecipe: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  postRecipeLabel: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  postRecipeTitle: {
+    color: '#f97316',
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  postActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f9fafb',
+  },
+  postActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  postActionText: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginLeft: 4,
+  },
+});

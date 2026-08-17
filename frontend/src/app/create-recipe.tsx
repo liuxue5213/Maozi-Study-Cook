@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -141,38 +142,38 @@ export default function CreateRecipeScreen() {
   };
 
   return (
-    <View className="flex-1 bg-cooking-background">
+    <View style={styles.container}>
       {/* 顶部导航 */}
-      <View className="bg-white px-4 py-3 flex-row items-center border-b border-gray-100">
+      <View style={styles.navBar}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text className="ml-3 text-lg font-bold text-cooking-text">
+        <Text style={styles.navTitle}>
           创建菜品
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-4">
+      <ScrollView style={styles.scrollView}>
         {/* 基本信息 */}
-        <View className="bg-white rounded-2xl p-4 mb-4">
-          <Text className="text-base font-bold text-cooking-text mb-3">
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>
             📝 基本信息
           </Text>
 
-          <View className="mb-3">
-            <Text className="text-cooking-muted text-sm mb-1">菜名 *</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>菜名 *</Text>
             <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-3 text-base"
+              style={styles.input}
               placeholder="如：番茄炒蛋"
               value={title}
               onChangeText={setTitle}
             />
           </View>
 
-          <View className="mb-3">
-            <Text className="text-cooking-muted text-sm mb-1">简介</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>简介</Text>
             <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-3 text-base"
+              style={styles.input}
               placeholder="简单描述这道菜..."
               value={description}
               onChangeText={setDescription}
@@ -180,29 +181,30 @@ export default function CreateRecipeScreen() {
             />
           </View>
 
-          <View className="flex-row mb-3">
-            <View className="flex-1 mr-3">
-              <Text className="text-cooking-muted text-sm mb-1">难度</Text>
-              <View className="flex-row">
+          <View style={styles.rowGroup}>
+            <View style={styles.halfCol}>
+              <Text style={styles.label}>难度</Text>
+              <View style={styles.row}>
                 {[1, 2, 3, 4, 5].map((d) => (
                   <TouchableOpacity
                     key={d}
                     onPress={() => setDifficulty(d)}
-                    className={`w-9 h-9 rounded-full items-center justify-center mr-2 ${
-                      d <= difficulty ? 'bg-cooking-main' : 'bg-gray-100'
-                    }`}
+                    style={[
+                      styles.starButton,
+                      d <= difficulty ? styles.starActive : styles.starInactive,
+                    ]}
                   >
-                    <Text className={d <= difficulty ? 'text-white' : 'text-cooking-muted'}>
+                    <Text style={d <= difficulty ? styles.starTextActive : styles.starTextInactive}>
                       ⭐
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
-            <View className="flex-1">
-              <Text className="text-cooking-muted text-sm mb-1">份量</Text>
+            <View style={styles.flexHalf}>
+              <Text style={styles.label}>份量</Text>
               <TextInput
-                className="bg-gray-50 rounded-xl px-4 py-3 text-base"
+                style={styles.input}
                 placeholder="2"
                 value={servings}
                 onChangeText={setServings}
@@ -211,21 +213,21 @@ export default function CreateRecipeScreen() {
             </View>
           </View>
 
-          <View className="flex-row">
-            <View className="flex-1 mr-3">
-              <Text className="text-cooking-muted text-sm mb-1">备餐时间(分)</Text>
+          <View style={styles.row}>
+            <View style={styles.halfCol}>
+              <Text style={styles.label}>备餐时间(分)</Text>
               <TextInput
-                className="bg-gray-50 rounded-xl px-4 py-3 text-base"
+                style={styles.input}
                 placeholder="15"
                 value={prepTime}
                 onChangeText={setPrepTime}
                 keyboardType="numeric"
               />
             </View>
-            <View className="flex-1">
-              <Text className="text-cooking-muted text-sm mb-1">烹饪时间(分)</Text>
+            <View style={styles.flexHalf}>
+              <Text style={styles.label}>烹饪时间(分)</Text>
               <TextInput
-                className="bg-gray-50 rounded-xl px-4 py-3 text-base"
+                style={styles.input}
                 placeholder="20"
                 value={cookTime}
                 onChangeText={setCookTime}
@@ -234,10 +236,10 @@ export default function CreateRecipeScreen() {
             </View>
           </View>
 
-          <View className="mt-3">
-            <Text className="text-cooking-muted text-sm mb-1">技巧贴士</Text>
+          <View style={styles.fieldGroupTop}>
+            <Text style={styles.label}>技巧贴士</Text>
             <TextInput
-              className="bg-gray-50 rounded-xl px-4 py-3 text-base"
+              style={styles.input}
               placeholder="分享你的烹饪小技巧..."
               value={tips}
               onChangeText={setTips}
@@ -247,30 +249,33 @@ export default function CreateRecipeScreen() {
         </View>
 
         {/* 食材 */}
-        <View className="bg-white rounded-2xl p-4 mb-4">
-          <Text className="text-base font-bold text-cooking-text mb-3">
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>
             🥬 食材清单
           </Text>
 
           {ingredients.map((ing, idx) => (
-            <View key={idx} className="flex-row items-center mb-2">
+            <View key={idx} style={styles.ingredientRow}>
               <TextInput
-                className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm mr-2"
+                style={styles.ingredientNameInput}
                 placeholder="食材名"
                 value={ing.name}
                 onChangeText={(v) => updateIngredient(idx, 'name', v)}
               />
               <TextInput
-                className="w-20 bg-gray-50 rounded-lg px-3 py-2 text-sm mr-2"
+                style={styles.ingredientAmountInput}
                 placeholder="用量"
                 value={ing.amount}
                 onChangeText={(v) => updateIngredient(idx, 'amount', v)}
               />
               <TouchableOpacity
-                className={`px-2 py-1 rounded mr-2 ${ing.isMain ? 'bg-orange-100' : 'bg-gray-100'}`}
+                style={[
+                  styles.toggleButton,
+                  ing.isMain ? styles.toggleMain : styles.toggleSub,
+                ]}
                 onPress={() => updateIngredient(idx, 'isMain', (!ing.isMain).toString())}
               >
-                <Text className={`text-xs ${ing.isMain ? 'text-cooking-main' : 'text-cooking-muted'}`}>
+                <Text style={[styles.toggleText, ing.isMain ? styles.toggleTextMain : styles.toggleTextMuted]}>
                   {ing.isMain ? '主料' : '配料'}
                 </Text>
               </TouchableOpacity>
@@ -282,60 +287,60 @@ export default function CreateRecipeScreen() {
             </View>
           ))}
 
-          <View className="flex-row mt-2">
+          <View style={styles.addRow}>
             <TouchableOpacity
-              className="px-3 py-2 rounded-lg bg-orange-50 mr-2"
+              style={styles.addMainButton}
               onPress={() => addIngredient(true)}
             >
-              <Text className="text-cooking-main text-sm">+ 主料</Text>
+              <Text style={styles.addMainText}>+ 主料</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="px-3 py-2 rounded-lg bg-gray-50"
+              style={styles.addSubButton}
               onPress={() => addIngredient(false)}
             >
-              <Text className="text-cooking-muted text-sm">+ 配料/调料</Text>
+              <Text style={styles.addSubText}>+ 配料/调料</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* 步骤 */}
-        <View className="bg-white rounded-2xl p-4 mb-4">
-          <Text className="text-base font-bold text-cooking-text mb-3">
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>
             👨‍🍳 烹饪步骤
           </Text>
 
           {steps.map((step, idx) => (
-            <View key={idx} className="mb-3 pb-3 border-b border-gray-50">
-              <View className="flex-row items-center mb-2">
-                <View className="w-7 h-7 bg-cooking-main rounded-full items-center justify-center">
-                  <Text className="text-white text-sm font-bold">{idx + 1}</Text>
+            <View key={idx} style={styles.stepItem}>
+              <View style={styles.stepHeader}>
+                <View style={styles.stepNumberBadge}>
+                  <Text style={styles.stepNumberText}>{idx + 1}</Text>
                 </View>
-                <Text className="text-cooking-text font-medium ml-2">
+                <Text style={styles.stepLabel}>
                   步骤 {idx + 1}
                 </Text>
                 {steps.length > 1 && (
-                  <TouchableOpacity onPress={() => removeStep(idx)} className="ml-auto">
+                  <TouchableOpacity onPress={() => removeStep(idx)} style={styles.mlAuto}>
                     <Ionicons name="close-circle" size={18} color="#ef4444" />
                   </TouchableOpacity>
                 )}
               </View>
               <TextInput
-                className="bg-gray-50 rounded-lg px-3 py-2 text-sm mb-2"
+                style={styles.stepInput}
                 placeholder="描述这一步的操作..."
                 value={step.description}
                 onChangeText={(v) => updateStep(idx, 'description', v)}
                 multiline
               />
-              <View className="flex-row">
+              <View style={styles.row}>
                 <TextInput
-                  className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm mr-2"
+                  style={styles.stepHalfInputLeft}
                   placeholder="耗时(分)"
                   value={step.duration}
                   onChangeText={(v) => updateStep(idx, 'duration', v)}
                   keyboardType="numeric"
                 />
                 <TextInput
-                  className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm"
+                  style={styles.stepHalfInputRight}
                   placeholder="小贴士"
                   value={step.tips}
                   onChangeText={(v) => updateStep(idx, 'tips', v)}
@@ -345,28 +350,267 @@ export default function CreateRecipeScreen() {
           ))}
 
           <TouchableOpacity
-            className="px-3 py-2 rounded-lg bg-gray-50 self-start"
+            style={styles.addStepButton}
             onPress={addStep}
           >
-            <Text className="text-cooking-muted text-sm">+ 添加步骤</Text>
+            <Text style={styles.addSubText}>+ 添加步骤</Text>
           </TouchableOpacity>
         </View>
 
         {/* 提交按钮 */}
         <TouchableOpacity
-          className={`py-4 rounded-2xl items-center mb-8 ${
-            isSubmitting ? 'bg-gray-400' : 'bg-cooking-main'
-          }`}
+          style={[styles.submitButton, isSubmitting ? styles.submitDisabled : styles.submitActive]}
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
           {isSubmitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-lg font-semibold">发布菜品</Text>
+            <Text style={styles.submitText}>发布菜品</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
+  },
+  navBar: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  navTitle: {
+    marginLeft: 12,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  fieldGroup: {
+    marginBottom: 12,
+  },
+  fieldGroupTop: {
+    marginTop: 12,
+  },
+  label: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  rowGroup: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  halfCol: {
+    flex: 1,
+    marginRight: 12,
+  },
+  flexHalf: {
+    flex: 1,
+  },
+  starButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  starActive: {
+    backgroundColor: '#f97316',
+  },
+  starInactive: {
+    backgroundColor: '#f3f4f6',
+  },
+  starTextActive: {
+    color: '#fff',
+  },
+  starTextInactive: {
+    color: '#9ca3af',
+  },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ingredientNameInput: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginRight: 8,
+  },
+  ingredientAmountInput: {
+    width: 80,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginRight: 8,
+  },
+  toggleButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  toggleMain: {
+    backgroundColor: '#ffedd5',
+  },
+  toggleSub: {
+    backgroundColor: '#f3f4f6',
+  },
+  toggleText: {
+    fontSize: 12,
+  },
+  toggleTextMain: {
+    color: '#f97316',
+  },
+  toggleTextMuted: {
+    color: '#9ca3af',
+  },
+  addRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  addMainButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#fff7ed',
+    marginRight: 8,
+  },
+  addMainText: {
+    color: '#f97316',
+    fontSize: 14,
+  },
+  addSubButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+  },
+  addSubText: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  stepItem: {
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f9fafb',
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stepNumberBadge: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#f97316',
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  stepLabel: {
+    color: '#1f2937',
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  mlAuto: {
+    marginLeft: 'auto',
+  },
+  stepInput: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  stepHalfInputLeft: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginRight: 8,
+  },
+  stepHalfInputRight: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  addStepButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+    alignSelf: 'flex-start',
+  },
+  submitButton: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  submitActive: {
+    backgroundColor: '#f97316',
+  },
+  submitDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  submitText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});

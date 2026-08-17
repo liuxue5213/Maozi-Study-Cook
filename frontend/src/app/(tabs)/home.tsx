@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,60 +47,63 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f97316" />
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-cooking-background">
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       {/* 欢迎区域 */}
-      <View className="bg-cooking-main px-5 pt-6 pb-8 rounded-b-3xl">
-        <Text className="text-white text-lg">
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
           {user?.nickname ? `你好，${user.nickname} 👋` : '你好，厨友 👋'}
         </Text>
-        <Text className="text-white/80 text-sm mt-1">
+        <Text style={styles.headerSubtitle}>
           {user?.nickname ? `今天想学做什么菜？` : '登录开始你的烹饪之旅'}
         </Text>
 
-          {/* 快捷入口 */}
-          <View className="flex-row mt-5 space-x-4">
-            <QuickAction
-              icon="camera"
-              label="拍照识别"
-              onPress={() => router.push('/camera')}
-            />
-            <QuickAction
-              icon="search"
-              label="搜索菜谱"
-              onPress={() => router.push('/(tabs)/cuisines')}
-            />
-            <QuickAction
-              icon="calendar"
-              label="今日打卡"
-              onPress={() => router.push('/(tabs)/community')}
-            />
-          </View>
+        {/* 快捷入口 */}
+        <View style={styles.quickActions}>
+          <QuickAction
+            icon="camera"
+            label="拍照识别"
+            onPress={() => router.push('/camera')}
+          />
+          <QuickAction
+            icon="search"
+            label="搜索菜谱"
+            onPress={() => router.push('/(tabs)/cuisines')}
+          />
+          <QuickAction
+            icon="calendar"
+            label="今日打卡"
+            onPress={() => router.push('/(tabs)/community')}
+          />
+        </View>
       </View>
 
       {/* 菜系分类 */}
-      <View className="px-4 mt-6">
-        <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-lg font-bold text-cooking-text">八大菜系</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>八大菜系</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/cuisines')}>
-            <Text className="text-cooking-main text-sm">查看全部</Text>
+            <Text style={styles.sectionLink}>查看全部</Text>
           </TouchableOpacity>
         </View>
-        <View className="flex-row flex-wrap justify-between">
+        <View style={styles.cuisineGrid}>
           {cuisines.map((cuisine: any) => (
             <TouchableOpacity
               key={cuisine.id}
-              className="w-[23%] bg-white rounded-xl p-3 items-center mb-3 shadow-sm"
+              style={styles.cuisineItem}
               onPress={() => router.push(`/cuisine/${cuisine.slug}`)}
             >
-              <Text className="text-2xl mb-1">🍜</Text>
-              <Text className="text-xs text-cooking-text text-center">
+              <Text style={styles.cuisineIcon}>🍜</Text>
+              <Text style={styles.cuisineName}>
                 {cuisine.name}
               </Text>
             </TouchableOpacity>
@@ -108,35 +112,35 @@ export default function HomeScreen() {
       </View>
 
       {/* 热门菜谱 */}
-      <View className="px-4 mt-4 pb-6">
-        <Text className="text-lg font-bold text-cooking-text mb-3">
+      <View style={styles.hotSection}>
+        <Text style={styles.hotSectionTitle}>
           🔥 热门菜谱
         </Text>
         {hotRecipes.map((recipe: any) => (
           <TouchableOpacity
             key={recipe.id}
-            className="bg-white rounded-xl p-4 mb-3 flex-row shadow-sm"
+            style={styles.recipeCard}
             onPress={() => router.push(`/recipe/${recipe.id}`)}
           >
             {recipe.coverImage ? (
               <Image
                 source={{ uri: getImageUrl(recipe.coverImage) ?? '' }}
-                className="w-20 h-20 rounded-lg"
+                style={styles.recipeImage}
                 resizeMode="cover"
               />
             ) : (
-              <View className="w-20 h-20 bg-gray-100 rounded-lg items-center justify-center">
-                <Text className="text-3xl">🍲</Text>
+              <View style={styles.recipeImagePlaceholder}>
+                <Text style={styles.recipeImagePlaceholderIcon}>🍲</Text>
               </View>
             )}
-            <View className="flex-1 ml-3 justify-center">
-              <Text className="text-base font-semibold text-cooking-text">
+            <View style={styles.recipeInfo}>
+              <Text style={styles.recipeTitle}>
                 {recipe.title}
               </Text>
-              <Text className="text-cooking-muted text-sm mt-1">
+              <Text style={styles.recipeMeta}>
                 {recipe.cuisine?.name || ''} · 难度{recipe.difficulty}⭐
               </Text>
-              <Text className="text-cooking-muted text-xs mt-1">
+              <Text style={styles.recipeStats}>
                 ⏱ {recipe.cookTime || 30}分钟 · 👁 {recipe.viewCount || 0}次浏览 · 🍳 {recipe.cookCount || 0}人做过
               </Text>
             </View>
@@ -158,11 +162,165 @@ function QuickAction({
 }) {
   return (
     <TouchableOpacity
-      className="flex-1 bg-white/20 rounded-xl py-3 items-center"
+      style={styles.quickAction}
       onPress={onPress}
     >
       <Ionicons name={icon as any} size={22} color="white" />
-      <Text className="text-white text-xs mt-1">{label}</Text>
+      <Text style={styles.quickActionLabel}>{label}</Text>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#fafafa',
+  },
+  contentContainer: {
+    paddingBottom: 90,
+  },
+  header: {
+    backgroundColor: '#f97316',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+  },
+  headerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 16,
+  },
+  quickAction: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  quickActionLabel: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  section: {
+    paddingHorizontal: 16,
+    marginTop: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  sectionLink: {
+    color: '#f97316',
+    fontSize: 14,
+  },
+  cuisineGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  cuisineItem: {
+    width: '23%',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  cuisineIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  cuisineName: {
+    fontSize: 12,
+    color: '#1f2937',
+    textAlign: 'center',
+  },
+  hotSection: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+    paddingBottom: 24,
+  },
+  hotSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  recipeCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  recipeImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  recipeImagePlaceholder: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recipeImagePlaceholderIcon: {
+    fontSize: 30,
+  },
+  recipeInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  recipeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  recipeMeta: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  recipeStats: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginTop: 4,
+  },
+});

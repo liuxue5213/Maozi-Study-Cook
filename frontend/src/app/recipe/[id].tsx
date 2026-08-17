@@ -47,7 +47,7 @@ export default function RecipeDetailScreen() {
 
   return (
     <View style={commonStyles.container}>
-      <ScrollView>
+      <ScrollView style={{ flex: 1 }}>
         <View style={styles.cover}>
           {recipe.coverImage
             ? <Image source={{ uri: getImageUrl(recipe.coverImage) ?? '' }} style={styles.coverImg} />
