@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
@@ -22,7 +23,6 @@ export default function RegisterScreen() {
     nickname: '',
   });
   const [isLoading, setIsLoading] = useState(false);
-  // 页内错误提示（不用 Alert：Web/内嵌浏览器中 window.alert 常被拦截）
   const [errorMsg, setErrorMsg] = useState('');
   const { register } = useAuthStore();
 
@@ -32,16 +32,8 @@ export default function RegisterScreen() {
       setErrorMsg('请填写用户名和密码');
       return;
     }
-    if (!form.email && !form.phone) {
-      setErrorMsg('邮箱或手机号至少填写一个');
-      return;
-    }
     if (form.password !== form.confirmPassword) {
       setErrorMsg('两次输入的密码不一致');
-      return;
-    }
-    if (form.password.length < 6) {
-      setErrorMsg('密码长度不能少于6位');
       return;
     }
 
@@ -54,7 +46,6 @@ export default function RegisterScreen() {
         password: form.password,
         nickname: form.nickname || form.username,
       });
-      // 注册成功直接进入首页
       router.replace('/(tabs)/home');
     } catch (error: any) {
       setErrorMsg(error.message || '注册失败，请稍后重试');
@@ -65,17 +56,17 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView className="flex-1 px-6 pt-16">
-        <View className="items-center mb-8">
-          <Text className="text-4xl mb-2">🥟</Text>
-          <Text className="text-xl font-bold text-cooking-text">创建账号</Text>
-          <Text className="text-cooking-muted mt-1">加入帽子学做饭大家庭</Text>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoEmoji}>🥟</Text>
+          <Text style={styles.logoTitle}>创建账号</Text>
+          <Text style={styles.logoSubtitle}>加入帽子学做饭大家庭</Text>
         </View>
 
-        <View className="space-y-4">
+        <View style={styles.formContainer}>
           <InputField
             label="用户名 *"
             placeholder="请输入用户名"
@@ -119,28 +110,27 @@ export default function RegisterScreen() {
         </View>
 
         <TouchableOpacity
-          className="w-full h-12 bg-cooking-main rounded-xl items-center justify-center mt-8"
+          style={styles.registerButton}
           onPress={handleRegister}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-lg font-semibold">注册</Text>
+            <Text style={styles.registerButtonText}>注册</Text>
           )}
         </TouchableOpacity>
 
-        {/* 错误提示 */}
         {errorMsg ? (
-          <View className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mt-4">
-            <Text className="text-red-500 text-sm">{errorMsg}</Text>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
         ) : null}
 
-        <View className="flex-row items-center justify-center mt-6 mb-8">
-          <Text className="text-cooking-muted">已有账号？</Text>
+        <View style={styles.loginContainer}>
+          <Text style={styles.loginText}>已有账号？</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text className="text-cooking-main font-medium ml-1">去登录</Text>
+            <Text style={styles.loginLink}>去登录</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -164,10 +154,10 @@ function InputField({
   keyboardType?: 'default' | 'email-address' | 'phone-pad';
 }) {
   return (
-    <View>
-      <Text className="text-cooking-text mb-2 font-medium">{label}</Text>
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
       <TextInput
-        className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-base"
+        style={styles.input}
         placeholder={placeholder}
         placeholderTextColor="#9ca3af"
         value={value}
@@ -180,3 +170,98 @@ function InputField({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 64,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoEmoji: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
+  logoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  logoSubtitle: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  formContainer: {
+    marginBottom: 16,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    color: '#1f2937',
+    marginBottom: 8,
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  input: {
+    width: '100%',
+    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    fontSize: 16,
+  },
+  registerButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  loginText: {
+    color: '#6b7280',
+    fontSize: 14,
+  },
+  loginLink: {
+    color: '#f97316',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+});
