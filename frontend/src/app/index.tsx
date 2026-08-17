@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '../stores/authStore';
 
 export default function Index() {
@@ -21,8 +21,17 @@ export default function Index() {
   }, [isAuthenticated, isLoading]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-white">
+    <View style={styles.container}>
       <ActivityIndicator size="large" color="#f97316" />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+});
