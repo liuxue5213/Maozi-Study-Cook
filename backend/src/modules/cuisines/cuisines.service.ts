@@ -86,6 +86,7 @@ export class CuisinesService {
           id: true,
           title: true,
           coverImage: true,
+          coverThumb: true,
           difficulty: true,
           cookTime: true,
           viewCount: true,

@@ -45,7 +45,7 @@ export class CommunityService {
             select: { id: true, uuid: true, nickname: true, avatar: true },
           },
           recipe: {
-            select: { id: true, title: true, coverImage: true },
+            select: { id: true, title: true, coverImage: true, coverThumb: true },
           },
           images: {
             orderBy: { sortOrder: 'asc' },
@@ -87,7 +87,7 @@ export class CommunityService {
           select: { id: true, uuid: true, nickname: true, avatar: true },
         },
         recipe: {
-          select: { id: true, title: true, coverImage: true },
+          select: { id: true, title: true, coverImage: true, coverThumb: true },
         },
         images: {
           orderBy: { sortOrder: 'asc' },

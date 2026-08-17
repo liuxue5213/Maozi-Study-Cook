@@ -131,6 +131,7 @@ export class RecipesService {
           title: true,
           description: true,
           coverImage: true,
+          coverThumb: true,
           difficulty: true,
           prepTime: true,
           cookTime: true,
@@ -249,6 +250,7 @@ export class RecipesService {
         id: true,
         title: true,
         coverImage: true,
+          coverThumb: true,
         difficulty: true,
         cookTime: true,
         ingredients: {
