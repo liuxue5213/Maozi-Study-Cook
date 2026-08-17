@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# GITHUB_TOKEN 默认只读，创建 Release 需要写权限
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: 构建 Android APK
@@ -30,6 +34,9 @@ jobs:
       - name: 安装 Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: 配置 Gradle 缓存
+        uses: gradle/actions/setup-gradle@v6
+
       - name: 安装前端依赖
         working-directory: ./frontend
         run: npm ci
@@ -40,13 +47,15 @@ jobs:
 
       - name: 构建 APK
         working-directory: ./frontend/android
-        run: ./gradlew assembleRelease --no-daemon
+        # 只编 arm64-v8a（现代手机都是这个架构），C++ 编译量减到 1/4
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       - name: 上传 APK
         uses: actions/upload-artifact@v4
         with:
           name: maozi-study-cook-apk
-          path: frontend/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: frontend/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
           retention-days: 30
 
       - name: 创建 Release
@@ -54,7 +63,7 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           name: 帽子学做饭 v${{ github.run_number }}
-          files: frontend/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          files: frontend/android/app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
