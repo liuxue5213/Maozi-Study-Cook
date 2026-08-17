@@ -2,8 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { matchIngredient } from '../recipes/recipes.service';
 
@@ -479,7 +479,7 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
    * 下载生成结果并保存到 uploads/recipe-covers/
    */
   private async saveImage(imageUrl: string): Promise<string> {
-    const dir = join(__dirname, '..', '..', '..', 'uploads', 'recipe-covers');
+    const dir = join(this.findBackendRoot(), 'uploads', 'recipe-covers');
     mkdirSync(dir, { recursive: true });
 
     const ext = imageUrl.match(/\.(png|jpe?g|webp)/i)?.[1] || 'png';
@@ -495,6 +495,20 @@ ${preferences?.timeLimit ? `时间限制：${preferences.timeLimit}分钟以内�
     writeFileSync(filepath, Buffer.from(res.data as ArrayBuffer));
 
     return `/uploads/recipe-covers/${filename}`;
+  }
+
+  /**
+   * 向上查找后端根目录（兼容 dist 与 dist/src 两种编译产物结构）
+   */
+  private findBackendRoot(): string {
+    let dir = __dirname;
+    for (let i = 0; i < 6; i++) {
+      if (existsSync(join(dir, 'package.json'))) return dir;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+    return process.cwd();
   }
 
   /**

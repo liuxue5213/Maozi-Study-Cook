@@ -4,8 +4,23 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './modules/common/interceptors/transform.interceptor';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { existsSync } from 'fs';
 import helmet from 'helmet';
+
+/**
+ * 向上查找后端根目录（兼容 dist/main.js 与 dist/src/main.js 两种编译产物结构）
+ */
+export function findBackendRoot(startDir: string): string {
+  let dir = startDir;
+  for (let i = 0; i < 6; i++) {
+    if (existsSync(join(dir, 'package.json'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd();
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -26,7 +41,7 @@ async function bootstrap() {
   );
 
   // 静态文件服务：/uploads/ 目录下的文件可通过 HTTP 直接访问
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  app.useStaticAssets(join(findBackendRoot(__dirname), 'uploads'), {
     prefix: '/uploads/',
   });
 
